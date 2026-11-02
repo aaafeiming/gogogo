@@ -289,21 +289,34 @@
 
         <!-- ================= TAB 6: PACKING LIST (DUAL MODE) ================= -->
         <div id="tab-packing" class="tab-content space-y-4 hidden">
+            <!-- 身份标识 -->
+            <div class="bg-blue-50/70 border border-blue-100 rounded-xl px-4 py-2.5 flex items-center justify-between text-sm">
+                <span>我的身份：<strong id="my-role-display" class="text-apple-blue">成员A</strong></span>
+                <button onclick="toggleMyRole()" class="text-apple-blue font-medium flex items-center space-x-1">
+                    <i class="fa-solid fa-right-left text-xs"></i><span>切换身份</span>
+                </button>
+            </div>
+
             <!-- Dual Mode User Switcher Header -->
             <div class="bg-gray-200/80 p-1.5 rounded-xl flex">
-                <button onclick="switchPackingUser('user1')" id="btn-pack-user1" class="flex-1 py-2.5 text-sm font-semibold rounded-lg bg-white text-apple-blue shadow-sm transition">
+                <button onclick="switchPackingView('mine')" id="btn-pack-mine" class="flex-1 py-2.5 text-sm font-semibold rounded-lg bg-white text-apple-blue shadow-sm transition">
                     <i class="fa-solid fa-user mr-1"></i>我的行李清单
                 </button>
-                <button onclick="switchPackingUser('user2')" id="btn-pack-user2" class="flex-1 py-2.5 text-sm font-semibold rounded-lg text-apple-textSecondary transition">
-                    <i class="fa-solid fa-user-group mr-1"></i>同行伙伴行李
+                <button onclick="switchPackingView('partner')" id="btn-pack-partner" class="flex-1 py-2.5 text-sm font-semibold rounded-lg text-apple-textSecondary transition">
+                    <i class="fa-solid fa-user-group mr-1"></i>同伴的行李清单
                 </button>
             </div>
 
             <div class="flex justify-between items-center px-1">
                 <h3 id="packing-mode-title" class="text-base font-semibold">我的行李物品清单</h3>
-                <button onclick="openPackingModal()" class="text-base text-apple-blue font-medium flex items-center space-x-1">
+                <button onclick="openPackingModal()" id="btn-add-packing" class="text-base text-apple-blue font-medium flex items-center space-x-1">
                     <i class="fa-solid fa-plus-circle"></i><span>添加物品</span>
                 </button>
+            </div>
+
+            <!-- 只读提示 -->
+            <div id="packing-readonly-hint" class="hidden text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-4 py-2.5">
+                <i class="fa-solid fa-eye mr-1 text-amber-500"></i>正在查看同伴的行李清单，此清单为只读
             </div>
 
             <!-- Packing Categories Container -->
@@ -352,14 +365,14 @@
                 <button onclick="closeModal('modal-share')" class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-apple-textSecondary"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
             <p class="text-sm text-apple-textSecondary leading-relaxed">
-                输入或生成房间号，同行伙伴输入同一房间号（或打开带参数链接），即可实时同步编辑行程、双人行李和账单数据！
+                复制下方共享邀请链接发给同行伙伴（或把链接中的房间号发给对方），双方即可实时同步编辑行程、双人行李和账单数据！
             </p>
             <div class="space-y-3">
                 <div>
-                    <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">协同房间 ID</label>
+                    <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">协同房间 ID（云端同步标识）</label>
                     <div class="flex space-x-2">
-                        <input type="text" id="share-room-input" class="flex-1 bg-apple-grayBg border border-apple-border rounded-xl px-4 py-3 text-base focus:outline-none focus:border-apple-blue" placeholder="输入房间号">
-                        <button onclick="joinShareRoom()" class="px-4 py-3 bg-apple-blue text-white rounded-xl text-sm font-semibold">加入房间</button>
+                        <input type="text" id="share-room-input" class="flex-1 bg-apple-grayBg border border-apple-border rounded-xl px-4 py-3 text-base focus:outline-none focus:border-apple-blue" placeholder="输入房间号或粘贴共享链接">
+                        <button onclick="joinShareRoom()" class="px-4 py-3 bg-apple-blue text-white rounded-xl text-sm font-semibold whitespace-nowrap">加入房间</button>
                     </div>
                 </div>
             </div>
@@ -583,8 +596,8 @@
                 <div>
                     <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">归属成员</label>
                     <select id="pack-user" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-3 text-base focus:outline-none focus:border-apple-blue">
-                        <option value="user1">我的行李</option>
-                        <option value="user2">同行伙伴行李</option>
+                        <option value="user1" id="pack-user-opt1">我的行李（成员A）</option>
+                        <option value="user2" id="pack-user-opt2">同伴的行李（成员B）</option>
                     </select>
                 </div>
                 <div>
@@ -675,30 +688,24 @@
             }
         };
 
-        // State Management
-        let roomID = getQueryParam('room') || 'default_room';
-        let appData = JSON.parse(localStorage.getItem(`gogogo_data_${roomID}`)) || defaultData;
+        // ============ 状态管理 ============
+        let blobId = null;           // 云端 blob id（也是房间 id）
+        let roomID = 'default_room';
+        let appData = null;
+        let myRole = 'user1';        // 当前用户身份：user1 / user2
+        let currentPackingView = 'mine'; // 'mine' | 'partner'
         let currentActiveDay = "Day 1";
         let currentAttrFilter = "all";
-        let currentPackingUser = "user1"; // 'user1' or 'user2'
 
-        // Multi-user Realtime Broadcast Channel & Broadcast Network
-        const syncChannel = new BroadcastChannel(`gogogo_sync_channel_${roomID}`);
-        syncChannel.onmessage = (event) => {
-            if (event.data && event.data.type === 'DATA_UPDATE') {
-                appData = event.data.payload;
-                localStorage.setItem(`gogogo_data_${roomID}`, JSON.stringify(appData));
-                renderAll();
-                showToast("收到同伴修改，已同步更新！");
-            }
-        };
+        let syncChannel = null;
+        let pollTimer = null;
+        let isUploading = false;
 
-        function broadcastState() {
-            localStorage.setItem(`gogogo_data_${roomID}`, JSON.stringify(appData));
-            syncChannel.postMessage({
-                type: 'DATA_UPDATE',
-                payload: appData
-            });
+        const SYNC_BASE = 'https://jsonblob.com/api/jsonBlob';
+
+        function getQueryParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
         }
 
         function getQueryParam(param) {
@@ -706,9 +713,146 @@
             return urlParams.get(param);
         }
 
-        function saveData() {
-            broadcastState();
+        // ============ 云端同步 ============
+        async function initSync() {
+            const urlRoom = getQueryParam('room');
+
+            if (urlRoom && urlRoom !== 'default_room') {
+                // 已有房间，加入
+                blobId = urlRoom;
+                roomID = urlRoom;
+                const remote = await fetchBlob(blobId);
+                if (remote && remote.trip) {
+                    appData = remote;
+                } else {
+                    // 云端无数据（可能刚创建），用本地缓存或默认
+                    const localCache = localStorage.getItem(`gogogo_data_${roomID}`);
+                    appData = localCache ? JSON.parse(localCache) : JSON.parse(JSON.stringify(defaultData));
+                    // 尝试上传（若 blob 存在则成功，不存在则忽略）
+                    await updateBlob(blobId, appData);
+                }
+                localStorage.setItem(`gogogo_data_${roomID}`, JSON.stringify(appData));
+            } else {
+                // 没有房间 id，尝试用本地 default 数据创建新房间
+                const localCache = localStorage.getItem('gogogo_data_default_room');
+                appData = localCache ? JSON.parse(localCache) : JSON.parse(JSON.stringify(defaultData));
+
+                const newId = await createBlob(appData);
+                if (newId) {
+                    blobId = newId;
+                    roomID = newId;
+                    localStorage.setItem(`gogogo_data_${newId}`, JSON.stringify(appData));
+                    updateURL();
+                } else {
+                    roomID = 'default_room';
+                    showToast("云端同步初始化失败，仅本地保存");
+                }
+            }
+
+            // 加载当前身份
+            myRole = localStorage.getItem(`gogogo_my_role_${roomID}`) || 'user1';
+
+            // 初始化 BroadcastChannel（同设备多标签页通知）
+            try {
+                syncChannel = new BroadcastChannel(`gogogo_sync_channel_${roomID}`);
+                syncChannel.onmessage = async (event) => {
+                    if (!event.data || event.data.type !== 'DATA_UPDATE') return;
+                    if (!blobId) return;
+                    const remote = await fetchBlob(blobId);
+                    if (remote && remote.trip && JSON.stringify(remote) !== JSON.stringify(appData)) {
+                        appData = remote;
+                        localStorage.setItem(`gogogo_data_${roomID}`, JSON.stringify(appData));
+                        renderAll();
+                        showToast("已同步同伴的修改");
+                    }
+                };
+            } catch (e) { console.warn('BroadcastChannel 不支持', e); }
+
             renderAll();
+            fetchWeather();
+
+            if (blobId) startPolling();
+        }
+
+        async function fetchBlob(id) {
+            try {
+                const res = await fetch(`${SYNC_BASE}/${id}`, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (!res.ok) return null;
+                return await res.json();
+            } catch (e) {
+                console.warn('fetchBlob error', e);
+                return null;
+            }
+        }
+
+        async function createBlob(data) {
+            try {
+                const res = await fetch(SYNC_BASE, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!res.ok) throw new Error('创建失败 ' + res.status);
+                const location = res.headers.get('Location') || '';
+                return location.split('/').pop() || null;
+            } catch (e) {
+                console.warn('createBlob error', e);
+                return null;
+            }
+        }
+
+        async function updateBlob(id, data) {
+            try {
+                const res = await fetch(`${SYNC_BASE}/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                return res.ok;
+            } catch (e) {
+                console.warn('updateBlob error', e);
+                return false;
+            }
+        }
+
+        function updateURL() {
+            if (!blobId) return;
+            const url = new URL(window.location.href);
+            url.searchParams.set('room', blobId);
+            window.history.replaceState({}, '', url);
+        }
+
+        function startPolling() {
+            if (pollTimer) clearInterval(pollTimer);
+            pollTimer = setInterval(async () => {
+                if (isUploading || !blobId) return;
+                const remote = await fetchBlob(blobId);
+                if (remote && remote.trip && JSON.stringify(remote) !== JSON.stringify(appData)) {
+                    appData = remote;
+                    localStorage.setItem(`gogogo_data_${roomID}`, JSON.stringify(appData));
+                    renderAll();
+                    showToast("已同步同伴的修改");
+                }
+            }, 4000);
+        }
+
+        async function saveData() {
+            localStorage.setItem(`gogogo_data_${roomID}`, JSON.stringify(appData));
+            renderAll();
+
+            if (blobId) {
+                isUploading = true;
+                const ok = await updateBlob(blobId, appData);
+                isUploading = false;
+                if (!ok) showToast("云端同步失败，已本地保存");
+            }
+
+            try {
+                if (syncChannel) syncChannel.postMessage({ type: 'DATA_UPDATE' });
+            } catch (e) {}
         }
 
         function showToast(msg) {
@@ -760,6 +904,7 @@
         // Real-time Weather Fetching (QinHuangDao: lat=39.935, lon=119.597)
         async function fetchWeather() {
             const currentTempEl = document.getElementById('weather-current-temp');
+            if (!currentTempEl) return;
             currentTempEl.innerText = "正在拉取最新预报...";
             try {
                 const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=39.935&longitude=119.597&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=Asia%2FShanghai');
@@ -798,14 +943,27 @@
         }
 
         function joinShareRoom() {
-            const inputVal = document.getElementById('share-room-input').value.trim();
-            if(inputVal) {
-                const newUrl = window.location.pathname + '?room=' + encodeURIComponent(inputVal);
-                window.location.href = newUrl;
-            }
+            let inputVal = document.getElementById('share-room-input').value.trim();
+            if (!inputVal) { showToast("请输入房间号"); return; }
+
+            // 兼容用户粘贴完整链接
+            try {
+                if (inputVal.startsWith('http') || inputVal.includes('?')) {
+                    const url = new URL(inputVal.startsWith('http') ? inputVal : 'https://x.com/' + inputVal);
+                    const room = url.searchParams.get('room');
+                    if (room) inputVal = room;
+                }
+            } catch(e) {}
+
+            const newUrl = window.location.pathname + '?room=' + encodeURIComponent(inputVal);
+            window.location.href = newUrl;
         }
 
         function copyShareLink() {
+            if (!roomID || roomID === 'default_room') {
+                showToast("当前房间暂未同步，请稍后再试");
+                return;
+            }
             const shareUrl = window.location.origin + window.location.pathname + '?room=' + encodeURIComponent(roomID);
             navigator.clipboard.writeText(shareUrl).then(() => {
                 showToast("共享链接已复制！发送给伙伴即可实时协作。");
@@ -814,14 +972,13 @@
             });
         }
 
-        // Render All Components
+        // ============ 渲染 ============
         function renderAll() {
-            // Header & Room Info
+            if (!appData) return;
             document.getElementById('trip-title-display').innerText = appData.trip.title;
             document.getElementById('trip-date-display').innerText = `${appData.trip.startDate} - ${appData.trip.endDate}`;
-            document.getElementById('current-room-display').innerText = roomID;
+            document.getElementById('current-room-display').innerText = roomID === 'default_room' ? '公共房间' : roomID;
 
-            // Overview Countdown
             const start = new Date(appData.trip.startDate);
             const today = new Date();
             const diffTime = start - today;
@@ -829,7 +986,6 @@
             document.getElementById('countdown-days').innerText = diffDays >= 0 ? diffDays : 0;
             document.getElementById('stat-days').innerText = `${getTripDaysCount()} 天`;
 
-            // Budget calculations
             let totalSpent = appData.budgetList.reduce((acc, item) => acc + Number(item.amount), 0);
             let totalBudget = Number(appData.trip.budget);
             let remaining = totalBudget - totalSpent;
@@ -838,468 +994,4 @@
             document.getElementById('overview-budget-text').innerText = `已花 ¥${totalSpent} / 总 ¥${totalBudget}`;
             document.getElementById('overview-budget-bar').style.width = `${percent}%`;
 
-            document.getElementById('budget-total').innerText = `¥ ${totalBudget.toLocaleString()}`;
-            document.getElementById('budget-spent').innerText = `¥ ${totalSpent.toLocaleString()}`;
-            document.getElementById('budget-remaining').innerText = `¥ ${remaining.toLocaleString()}`;
-
-            // Render Modules
-            renderSchedule();
-            renderBudgetList();
-            renderTransportList();
-            renderAttractionsList();
-            renderPackingList();
-        }
-
-        // Schedule Render
-        function renderSchedule() {
-            const days = getDaysArray();
-            const pillsContainer = document.getElementById('day-pills-container');
-            pillsContainer.innerHTML = '';
-            
-            if (!appData.schedule[currentActiveDay] && days.length > 0) {
-                currentActiveDay = days[0];
-            }
-
-            days.forEach(day => {
-                const isSelected = day === currentActiveDay;
-                pillsContainer.innerHTML += `
-                    <button onclick="switchDay('${day}')" class="px-5 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition ${isSelected ? 'bg-apple-blue text-white shadow-sm' : 'bg-white text-apple-textSecondary border border-apple-border'}">
-                        ${day}
-                    </button>
-                `;
-            });
-
-            // Populate Day Selector in Modal
-            const schDaySelect = document.getElementById('sch-day');
-            schDaySelect.innerHTML = '';
-            days.forEach(day => {
-                schDaySelect.innerHTML += `<option value="${day}">${day}</option>`;
-            });
-
-            const timelineContainer = document.getElementById('schedule-timeline-container');
-            timelineContainer.innerHTML = '';
-            const items = appData.schedule[currentActiveDay] || [];
-
-            if (items.length === 0) {
-                timelineContainer.innerHTML = `<div class="text-center py-8 text-sm text-apple-textSecondary">当天暂无行程安排，点击下方按钮添加。</div>`;
-                return;
-            }
-
-            items.forEach((item) => {
-                timelineContainer.innerHTML += `
-                    <div class="glass-card rounded-2xl p-5 shadow-sm relative pl-7 border-l-4 border-apple-blue">
-                        <div class="flex justify-between items-start">
-                            <span class="text-sm font-semibold text-apple-blue bg-blue-50 px-2.5 py-1 rounded-md"><i class="fa-regular fa-clock mr-1"></i>${item.time}</span>
-                            <button onclick="deleteScheduleItem('${currentActiveDay}', ${item.id})" class="text-gray-300 hover:text-rose-500 text-base transition"><i class="fa-solid fa-trash-can"></i></button>
-                        </div>
-                        <h4 class="font-semibold text-base mt-2 text-apple-textPrimary">${item.title}</h4>
-                        <div class="text-sm text-apple-textSecondary mt-1 flex items-center"><i class="fa-solid fa-location-dot mr-1 text-apple-blue"></i>${item.location || '未指定地点'}</div>
-                        ${item.notes ? `<p class="text-sm text-apple-textSecondary mt-2 bg-gray-50 p-3 rounded-xl">${item.notes}</p>` : ''}
-                        ${item.image ? `<div class="mt-3"><img src="${item.image}" class="w-full h-40 object-cover rounded-xl shadow-sm" alt="凭证图片"></div>` : ''}
-                    </div>
-                `;
-            });
-        }
-
-        function switchDay(day) {
-            currentActiveDay = day;
-            renderSchedule();
-        }
-
-        // Budget List Render (with Payer)
-        function renderBudgetList() {
-            const container = document.getElementById('budget-list-container');
-            container.innerHTML = '';
-            if(appData.budgetList.length === 0) {
-                container.innerHTML = `<div class="text-center py-6 text-sm text-apple-textSecondary">暂无记账条目</div>`;
-                return;
-            }
-            appData.budgetList.forEach(item => {
-                container.innerHTML += `
-                    <div class="glass-card rounded-2xl p-4 shadow-sm flex items-center justify-between">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-11 h-11 rounded-xl bg-blue-50 text-apple-blue flex items-center justify-center text-base">
-                                <i class="fa-solid fa-receipt"></i>
-                            </div>
-                            <div>
-                                <div class="text-base font-semibold">${item.title}</div>
-                                <div class="flex items-center space-x-2 mt-1">
-                                    <span class="text-xs bg-gray-100 text-apple-textSecondary px-2 py-0.5 rounded-md">${item.category}</span>
-                                    <span class="text-xs bg-blue-50 text-apple-blue px-2 py-0.5 rounded-md"><i class="fa-solid fa-user mr-1"></i>付款人: ${item.payer || '通用/共享'}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex items-center space-x-3">
-                            <span class="text-base font-bold text-rose-500">- ¥${item.amount}</span>
-                            <button onclick="deleteBudgetItem(${item.id})" class="text-gray-300 hover:text-rose-500 text-sm"><i class="fa-solid fa-xmark"></i></button>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        // Transport & Stay Render
-        function renderTransportList() {
-            const container = document.getElementById('transport-list-container');
-            container.innerHTML = '';
-            if(appData.transportList.length === 0) {
-                container.innerHTML = `<div class="text-center py-6 text-sm text-apple-textSecondary">暂无车票与酒店凭证</div>`;
-                return;
-            }
-            appData.transportList.forEach(item => {
-                const isTransport = item.type === 'transport';
-                container.innerHTML += `
-                    <div class="glass-card rounded-2xl p-5 shadow-sm space-y-2">
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm font-semibold ${isTransport ? 'bg-purple-50 text-purple-600' : 'bg-emerald-50 text-emerald-600'} px-3 py-1 rounded-lg">
-                                <i class="fa-solid ${isTransport ? 'fa-train' : 'fa-hotel'} mr-1"></i>${isTransport ? '交通车票' : '酒店住宿'}
-                            </span>
-                            <button onclick="deleteTransportItem(${item.id})" class="text-gray-300 hover:text-rose-500 text-base"><i class="fa-solid fa-trash-can"></i></button>
-                        </div>
-                        <h4 class="font-semibold text-base text-apple-textPrimary">${item.title}</h4>
-                        <div class="grid grid-cols-2 gap-2 text-sm text-apple-textSecondary">
-                            <div><i class="fa-regular fa-clock mr-1"></i>${item.time}</div>
-                            <div><i class="fa-solid fa-barcode mr-1"></i>${item.code}</div>
-                        </div>
-                        <div class="text-sm text-apple-textSecondary bg-gray-50 p-2.5 rounded-xl"><i class="fa-solid fa-location-dot mr-1"></i>${item.desc}</div>
-                        ${item.image ? `<div class="mt-2"><img src="${item.image}" class="w-full h-36 object-cover rounded-xl" alt="凭证"></div>` : ''}
-                    </div>
-                `;
-            });
-        }
-
-        // Attractions & Dining Render
-        function renderAttractionsList() {
-            const container = document.getElementById('attractions-list-container');
-            container.innerHTML = '';
-            
-            let filtered = appData.attractionsList;
-            if(currentAttrFilter !== 'all') {
-                filtered = appData.attractionsList.filter(i => i.type === currentAttrFilter);
-            }
-
-            if(filtered.length === 0) {
-                container.innerHTML = `<div class="text-center py-6 text-sm text-apple-textSecondary">暂无相关心愿去处</div>`;
-                return;
-            }
-
-            filtered.forEach(item => {
-                const isAttraction = item.type === 'attraction';
-                container.innerHTML += `
-                    <div class="glass-card rounded-2xl p-5 shadow-sm space-y-2">
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm font-semibold ${isAttraction ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'} px-3 py-1 rounded-lg">
-                                <i class="fa-solid ${isAttraction ? 'fa-landmark' : 'fa-utensils'} mr-1"></i>${isAttraction ? '景点' : '餐厅'}
-                            </span>
-                            <div class="flex items-center space-x-2">
-                                <span class="text-sm font-medium text-amber-500">${'⭐'.repeat(Number(item.rating))}</span>
-                                <button onclick="deleteAttractionItem(${item.id})" class="text-gray-300 hover:text-rose-500 text-base"><i class="fa-solid fa-trash-can"></i></button>
-                            </div>
-                        </div>
-                        <h4 class="font-semibold text-base text-apple-textPrimary">${item.name}</h4>
-                        <div class="text-sm font-medium text-apple-blue">${item.price}</div>
-                        <p class="text-sm text-apple-textSecondary bg-gray-50 p-2.5 rounded-xl">${item.notes}</p>
-                        ${item.image ? `<div class="mt-2"><img src="${item.image}" class="w-full h-36 object-cover rounded-xl" alt="照片"></div>` : ''}
-                    </div>
-                `;
-            });
-        }
-
-        function filterAttractions(type) {
-            currentAttrFilter = type;
-            ['all', 'attraction', 'dining'].forEach(t => {
-                const btn = document.getElementById(`filter-btn-${t}`);
-                if(t === type) {
-                    btn.className = "flex-1 py-2.5 text-sm font-medium rounded-xl bg-apple-blue text-white transition shadow-sm";
-                } else {
-                    btn.className = "flex-1 py-2.5 text-sm font-medium rounded-xl bg-white text-apple-textSecondary border border-apple-border transition";
-                }
-            });
-            renderAttractionsList();
-        }
-
-        // Dual Mode Packing List Render (User 1 & User 2)
-        function switchPackingUser(userKey) {
-            currentPackingUser = userKey;
-            const btn1 = document.getElementById('btn-pack-user1');
-            const btn2 = document.getElementById('btn-pack-user2');
-            const titleEl = document.getElementById('packing-mode-title');
-
-            if(userKey === 'user1') {
-                btn1.className = "flex-1 py-2.5 text-sm font-semibold rounded-lg bg-white text-apple-blue shadow-sm transition";
-                btn2.className = "flex-1 py-2.5 text-sm font-semibold rounded-lg text-apple-textSecondary transition";
-                titleEl.innerText = "我的行李物品清单";
-            } else {
-                btn2.className = "flex-1 py-2.5 text-sm font-semibold rounded-lg bg-white text-apple-blue shadow-sm transition";
-                btn1.className = "flex-1 py-2.5 text-sm font-semibold rounded-lg text-apple-textSecondary transition";
-                titleEl.innerText = "同行伙伴的行李清单";
-            }
-            renderPackingList();
-        }
-
-        function renderPackingList() {
-            const container = document.getElementById('packing-container');
-            container.innerHTML = '';
-            
-            const activeList = currentPackingUser === 'user1' ? appData.packingListUser1 : appData.packingListUser2;
-
-            // Calculate global dual stats
-            let totalCount = 0;
-            let checkedCount = 0;
-
-            const calcStats = (listObj) => {
-                for(let cat in listObj) {
-                    listObj[cat].forEach(i => {
-                        totalCount++;
-                        if(i.checked) checkedCount++;
-                    });
-                }
-            };
-            calcStats(appData.packingListUser1);
-            calcStats(appData.packingListUser2);
-            document.getElementById('stat-packing').innerText = `${checkedCount} / ${totalCount}`;
-
-            // Render current selected user's list
-            for(let cat in activeList) {
-                const items = activeList[cat];
-                let catChecked = items.filter(i => i.checked).length;
-
-                let itemsHtml = '';
-                items.forEach(item => {
-                    itemsHtml += `
-                        <div class="flex items-center justify-between py-2.5 border-b border-gray-100 last:border-0">
-                            <label class="flex items-start space-x-3 cursor-pointer select-none flex-1 pr-2">
-                                <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="togglePackingItem('${cat}', ${item.id})" class="mt-0.5 w-5 h-5 text-apple-blue rounded border-apple-border focus:ring-0">
-                                <div>
-                                    <span class="text-base ${item.checked ? 'line-through text-apple-textSecondary' : 'text-apple-textPrimary font-medium'}">${item.name}</span>
-                                    ${item.note ? `<p class="text-sm text-apple-textSecondary mt-1">${item.note}</p>` : ''}
-                                </div>
-                            </label>
-                            <button onclick="deletePackingItem('${cat}', ${item.id})" class="text-gray-300 hover:text-rose-500 text-base"><i class="fa-solid fa-xmark"></i></button>
-                        </div>
-                    `;
-                });
-
-                container.innerHTML += `
-                    <div class="glass-card rounded-2xl p-4 shadow-sm space-y-2">
-                        <div class="flex justify-between items-center pb-2 border-b border-gray-100">
-                            <h4 class="font-semibold text-base text-apple-textPrimary uppercase tracking-wider">${cat}</h4>
-                            <span class="text-sm text-apple-textSecondary">${catChecked}/${items.length} 已备</span>
-                        </div>
-                        <div class="space-y-1">
-                            ${itemsHtml || '<div class="text-base text-apple-textSecondary py-1">该分类下暂无物品</div>'}
-                        </div>
-                    </div>
-                `;
-            }
-        }
-
-        // Modal Controls
-        function openSettingsModal() {
-            document.getElementById('set-title').value = appData.trip.title;
-            document.getElementById('set-start-date').value = appData.trip.startDate;
-            document.getElementById('set-end-date').value = appData.trip.endDate;
-            document.getElementById('set-budget').value = appData.trip.budget;
-            document.getElementById('modal-settings').classList.remove('hidden');
-        }
-
-        function openScheduleModal() { document.getElementById('modal-schedule').classList.remove('hidden'); }
-        function openBudgetModal() { document.getElementById('modal-budget').classList.remove('hidden'); }
-        function openTransportModal() { document.getElementById('modal-transport').classList.remove('hidden'); }
-        function openAttractionModal() { document.getElementById('modal-attraction').classList.remove('hidden'); }
-        function openPackingModal() { 
-            document.getElementById('pack-user').value = currentPackingUser;
-            document.getElementById('modal-packing').classList.remove('hidden'); 
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.add('hidden');
-        }
-
-        // Save Actions
-        function saveSettings() {
-            appData.trip.title = document.getElementById('set-title').value || "GoGoGo！周末出逃计划";
-            appData.trip.startDate = document.getElementById('set-start-date').value;
-            appData.trip.endDate = document.getElementById('set-end-date').value;
-            appData.trip.budget = Number(document.getElementById('set-budget').value) || 0;
-            closeModal('modal-settings');
-            saveData();
-            showToast("设置已更新");
-        }
-
-        function saveSchedule() {
-            const day = document.getElementById('sch-day').value;
-            const time = document.getElementById('sch-time').value;
-            const location = document.getElementById('sch-location').value;
-            const title = document.getElementById('sch-title').value;
-            const notes = document.getElementById('sch-notes').value;
-            const imageInput = document.getElementById('sch-image');
-
-            if(!title) {
-                showToast("请输入行程标题");
-                return;
-            }
-
-            const processSave = (imgUrl = '') => {
-                if(!appData.schedule[day]) appData.schedule[day] = [];
-                appData.schedule[day].push({
-                    id: Date.now(),
-                    time, location, title, notes, image: imgUrl
-                });
-                closeModal('modal-schedule');
-                saveData();
-                showToast("行程添加成功");
-            };
-
-            if(imageInput.files && imageInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) { processSave(e.target.result); };
-                reader.readAsDataURL(imageInput.files[0]);
-            } else {
-                processSave();
-            }
-        }
-
-        function deleteScheduleItem(day, id) {
-            appData.schedule[day] = appData.schedule[day].filter(i => i.id !== id);
-            saveData();
-            showToast("已删除行程");
-        }
-
-        function saveBudget() {
-            const title = document.getElementById('bud-title').value;
-            const category = document.getElementById('bud-category').value;
-            const amount = Number(document.getElementById('bud-amount').value);
-            const payer = document.getElementById('bud-payer').value.trim() || "通用";
-
-            if(!title || !amount) {
-                showToast("请完整填写账目金额和描述");
-                return;
-            }
-
-            appData.budgetList.push({ id: Date.now(), title, category, amount, payer });
-            closeModal('modal-budget');
-            saveData();
-            showToast("记账成功");
-        }
-
-        function deleteBudgetItem(id) {
-            appData.budgetList = appData.budgetList.filter(i => i.id !== id);
-            saveData();
-            showToast("已删除账目");
-        }
-
-        function saveTransport() {
-            const type = document.getElementById('ts-type').value;
-            const title = document.getElementById('ts-title').value;
-            const time = document.getElementById('ts-time').value;
-            const code = document.getElementById('ts-code').value;
-            const desc = document.getElementById('ts-desc').value;
-            const imageInput = document.getElementById('ts-image');
-
-            if(!title) {
-                showToast("请填写名称");
-                return;
-            }
-
-            const processSave = (imgUrl = '') => {
-                appData.transportList.push({ id: Date.now(), type, title, time, code, desc, image: imgUrl });
-                closeModal('modal-transport');
-                saveData();
-                showToast("凭证添加成功");
-            };
-
-            if(imageInput.files && imageInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) { processSave(e.target.result); };
-                reader.readAsDataURL(imageInput.files[0]);
-            } else {
-                processSave();
-            }
-        }
-
-        function deleteTransportItem(id) {
-            appData.transportList = appData.transportList.filter(i => i.id !== id);
-            saveData();
-            showToast("已删除凭证");
-        }
-
-        function saveAttraction() {
-            const type = document.getElementById('att-type').value;
-            const rating = document.getElementById('att-rating').value;
-            const name = document.getElementById('att-name').value;
-            const price = document.getElementById('att-price').value;
-            const notes = document.getElementById('att-notes').value;
-            const imageInput = document.getElementById('att-image');
-
-            if(!name) {
-                showToast("请输入名称");
-                return;
-            }
-
-            const processSave = (imgUrl = '') => {
-                appData.attractionsList.push({ id: Date.now(), type, rating, name, price, notes, image: imgUrl });
-                closeModal('modal-attraction');
-                saveData();
-                showToast("去处添加成功");
-            };
-
-            if(imageInput.files && imageInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) { processSave(e.target.result); };
-                reader.readAsDataURL(imageInput.files[0]);
-            } else {
-                processSave();
-            }
-        }
-
-        function deleteAttractionItem(id) {
-            appData.attractionsList = appData.attractionsList.filter(i => i.id !== id);
-            saveData();
-            showToast("已删除去处");
-        }
-
-        function savePacking() {
-            const targetUser = document.getElementById('pack-user').value;
-            const cat = document.getElementById('pack-cat').value;
-            const name = document.getElementById('pack-name').value.trim();
-            const note = document.getElementById('pack-note').value.trim();
-
-            if(!name) {
-                showToast("请输入物品名称");
-                return;
-            }
-
-            const targetList = targetUser === 'user1' ? appData.packingListUser1 : appData.packingListUser2;
-            if(!targetList[cat]) targetList[cat] = [];
-            targetList[cat].push({ id: Date.now(), name, note, checked: false });
-
-            closeModal('modal-packing');
-            saveData();
-            showToast("行李物品已成功添加");
-        }
-
-        function togglePackingItem(cat, id) {
-            const activeList = currentPackingUser === 'user1' ? appData.packingListUser1 : appData.packingListUser2;
-            const item = activeList[cat].find(i => i.id === id);
-            if(item) {
-                item.checked = !item.checked;
-                saveData();
-            }
-        }
-
-        function deletePackingItem(cat, id) {
-            const activeList = currentPackingUser === 'user1' ? appData.packingListUser1 : appData.packingListUser2;
-            activeList[cat] = activeList[cat].filter(i => i.id !== id);
-            saveData();
-            showToast("已删除物品");
-        }
-
-        // Initialize on Load
-        window.onload = function() {
-            renderAll();
-            fetchWeather();
-        };
-    </script>
-</body>
-</html>
+            document.getElementById('budget
