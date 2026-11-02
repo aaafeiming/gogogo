@@ -33,7 +33,6 @@
         }
     </script>
     <style>
-        /* Custom Apple glassmorphism & scrolling */
         body {
             background-color: #F5F5F7;
             color: #1D1D1F;
@@ -52,24 +51,27 @@
             -webkit-backdrop-filter: blur(10px);
             border: 1px solid rgba(0, 0, 0, 0.04);
         }
-        .hide-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .hide-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-        /* Smooth transitions */
-        .tab-content {
-            animation: fadeIn 0.3s ease-in-out;
-        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .tab-content { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(6px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        /* 全屏加载遮罩 */
+        #loading-mask {
+            position: fixed; inset: 0; background: #F5F5F7; z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
     </style>
 </head>
 <body class="h-full flex flex-col max-w-md mx-auto relative shadow-2xl overflow-hidden bg-apple-grayBg font-sans">
+
+    <!-- 加载遮罩 -->
+    <div id="loading-mask">
+        <i class="fa-solid fa-plane-departure text-4xl text-apple-blue animate-bounce mb-4"></i>
+        <div class="text-apple-textSecondary text-sm">正在连接云端房间...</div>
+    </div>
 
     <!-- Top Header Bar -->
     <header class="glass-nav sticky top-0 z-40 px-4 py-3.5 flex items-center justify-between border-b border-black/5">
@@ -78,16 +80,14 @@
                 <i class="fa-solid fa-plane-departure text-base"></i>
             </div>
             <div>
-                <h1 id="trip-title-display" class="font-semibold text-lg leading-tight">GoGoGo！周末出逃计划</h1>
-                <p id="trip-date-display" class="text-sm text-apple-textSecondary">2026.11.13 - 2026.11.15</p>
+                <h1 id="trip-title-display" class="font-semibold text-lg leading-tight">加载中...</h1>
+                <p id="trip-date-display" class="text-sm text-apple-textSecondary">--</p>
             </div>
         </div>
         <div class="flex items-center space-x-2">
-            <!-- Share & Live Sync Button -->
-            <button onclick="openShareModal()" class="w-10 h-10 rounded-full bg-blue-50 text-apple-blue hover:bg-blue-100 flex items-center justify-center transition" title="共享协同编辑">
+            <button onclick="openShareModal()" class="w-10 h-10 rounded-full bg-blue-50 text-apple-blue hover:bg-blue-100 flex items-center justify-center transition">
                 <i class="fa-solid fa-users text-base"></i>
             </button>
-            <!-- Settings Button -->
             <button onclick="openSettingsModal()" class="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-apple-textPrimary transition">
                 <i class="fa-solid fa-gear text-base"></i>
             </button>
@@ -99,7 +99,6 @@
         
         <!-- ================= TAB 1: OVERVIEW ================= -->
         <div id="tab-overview" class="tab-content space-y-5">
-            <!-- Countdown Banner -->
             <div class="rounded-3xl bg-gradient-to-br from-blue-600 to-apple-blue text-white p-6 shadow-lg relative overflow-hidden">
                 <div class="absolute -right-4 -bottom-4 opacity-10 text-9xl">
                     <i class="fa-solid fa-earth-asia"></i>
@@ -114,30 +113,27 @@
                 </div>
             </div>
 
-            <!-- Sync Room Indicator Banner -->
             <div class="glass-card rounded-2xl p-4 shadow-sm flex items-center justify-between text-sm border border-blue-100 bg-blue-50/50">
                 <div class="flex items-center space-x-2.5">
                     <span class="relative flex h-3 w-3">
                       <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                       <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
                     </span>
-                    <span class="text-apple-textPrimary font-medium">共享房间 ID: <span id="current-room-display" class="font-bold text-apple-blue">公共房间</span></span>
+                    <span class="text-apple-textPrimary font-medium">共享房间 ID: <span id="current-room-display" class="font-bold text-apple-blue">连接中</span></span>
                 </div>
                 <button onclick="openShareModal()" class="text-apple-blue hover:underline text-xs">同行协作</button>
             </div>
 
-            <!-- Budget Progress Card -->
             <div class="glass-card rounded-2xl p-5 shadow-sm">
                 <div class="flex justify-between items-center mb-2.5">
                     <span class="text-base font-semibold text-apple-textPrimary">预算消耗概览</span>
-                    <span id="overview-budget-text" class="text-sm text-apple-textSecondary">已花 ¥0 / 总 ¥3000</span>
+                    <span id="overview-budget-text" class="text-sm text-apple-textSecondary">--</span>
                 </div>
                 <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
                     <div id="overview-budget-bar" class="bg-apple-blue h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
                 </div>
             </div>
 
-            <!-- Quick Stats Grid -->
             <div class="grid grid-cols-2 gap-3">
                 <div class="glass-card rounded-2xl p-4 shadow-sm flex items-center space-x-3.5">
                     <div class="w-12 h-12 rounded-2xl bg-orange-100 text-orange-500 flex items-center justify-center text-xl">
@@ -145,7 +141,7 @@
                     </div>
                     <div>
                         <div class="text-sm text-apple-textSecondary">行程天数</div>
-                        <div id="stat-days" class="text-lg font-bold">3 天</div>
+                        <div id="stat-days" class="text-lg font-bold">--</div>
                     </div>
                 </div>
                 <div class="glass-card rounded-2xl p-4 shadow-sm flex items-center space-x-3.5">
@@ -154,12 +150,11 @@
                     </div>
                     <div>
                         <div class="text-sm text-apple-textSecondary">行李完成度</div>
-                        <div id="stat-packing" class="text-lg font-bold">0 / 0</div>
+                        <div id="stat-packing" class="text-lg font-bold">--</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Real-time Weather & 3-Day Forecast Card -->
             <div class="glass-card rounded-2xl p-5 shadow-sm space-y-3">
                 <div class="flex items-center justify-between border-b border-gray-100 pb-2.5">
                     <div class="flex items-center space-x-2.5">
@@ -171,8 +166,6 @@
                     </div>
                     <button onclick="fetchWeather()" class="text-sm text-apple-blue hover:underline"><i class="fa-solid fa-rotate-right mr-1"></i>刷新</button>
                 </div>
-
-                <!-- 3-Day Forecast Container -->
                 <div>
                     <div class="text-sm font-semibold text-apple-textSecondary mb-2.5">行程期间天气预报</div>
                     <div id="weather-forecast-container" class="grid grid-cols-3 gap-2 text-center">
@@ -180,19 +173,16 @@
                             <div class="font-medium text-gray-500">11-13</div>
                             <i class="fa-solid fa-sun text-amber-500 my-1 text-lg"></i>
                             <div class="font-bold text-apple-textPrimary">6°C ~ 14°C</div>
-                            <div class="text-xs text-gray-400">晴</div>
                         </div>
                         <div class="bg-gray-50 p-2.5 rounded-xl text-sm">
                             <div class="font-medium text-gray-500">11-14</div>
                             <i class="fa-solid fa-cloud-sun text-amber-500 my-1 text-lg"></i>
                             <div class="font-bold text-apple-textPrimary">5°C ~ 13°C</div>
-                            <div class="text-xs text-gray-400">多云</div>
                         </div>
                         <div class="bg-gray-50 p-2.5 rounded-xl text-sm">
                             <div class="font-medium text-gray-500">11-15</div>
                             <i class="fa-solid fa-cloud text-blue-400 my-1 text-lg"></i>
                             <div class="font-bold text-apple-textPrimary">4°C ~ 12°C</div>
-                            <div class="text-xs text-gray-400">阴</div>
                         </div>
                     </div>
                 </div>
@@ -201,53 +191,36 @@
 
         <!-- ================= TAB 2: SCHEDULE ================= -->
         <div id="tab-schedule" class="tab-content space-y-4 hidden">
-            <!-- Day selector pills -->
-            <div id="day-pills-container" class="flex space-x-2 overflow-x-auto pb-1 hide-scrollbar">
-                <!-- Dynamically populated day pills -->
-            </div>
-
-            <!-- Schedule Timeline Container -->
-            <div class="space-y-3" id="schedule-timeline-container">
-                <!-- Timeline items -->
-            </div>
-
-            <!-- Add Schedule Button -->
+            <div id="day-pills-container" class="flex space-x-2 overflow-x-auto pb-1 hide-scrollbar"></div>
+            <div class="space-y-3" id="schedule-timeline-container"></div>
             <button onclick="openScheduleModal()" class="w-full py-3.5 rounded-2xl bg-white border border-apple-border text-apple-blue font-medium text-base shadow-sm hover:bg-gray-50 flex items-center justify-center space-x-2 transition">
-                <i class="fa-solid fa-plus"></i>
-                <span>添加行程安排</span>
+                <i class="fa-solid fa-plus"></i><span>添加行程安排</span>
             </button>
         </div>
 
         <!-- ================= TAB 3: BUDGET ================= -->
         <div id="tab-budget" class="tab-content space-y-4 hidden">
-            <!-- Budget Summary Card -->
             <div class="glass-card rounded-2xl p-6 shadow-sm text-center">
                 <span class="text-sm text-apple-textSecondary uppercase tracking-wider">剩余预算 (元)</span>
-                <div id="budget-remaining" class="text-4xl font-bold text-apple-textPrimary mt-1">¥ 3,000</div>
+                <div id="budget-remaining" class="text-4xl font-bold text-apple-textPrimary mt-1">--</div>
                 <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-100 text-center">
                     <div>
                         <span class="text-sm text-apple-textSecondary">总预算</span>
-                        <div id="budget-total" class="text-base font-semibold mt-0.5">¥ 3,000</div>
+                        <div id="budget-total" class="text-base font-semibold mt-0.5">--</div>
                     </div>
                     <div>
                         <span class="text-sm text-apple-textSecondary">已支出</span>
-                        <div id="budget-spent" class="text-base font-semibold text-rose-500 mt-0.5">¥ 0</div>
+                        <div id="budget-spent" class="text-base font-semibold text-rose-500 mt-0.5">--</div>
                     </div>
                 </div>
             </div>
-
-            <!-- Budget List Header -->
             <div class="flex justify-between items-center px-1">
                 <h3 class="text-base font-semibold">收支明细</h3>
                 <button onclick="openBudgetModal()" class="text-sm text-apple-blue font-medium flex items-center space-x-1">
                     <i class="fa-solid fa-plus-circle"></i><span>记一笔</span>
                 </button>
             </div>
-
-            <!-- Transactions List -->
-            <div id="budget-list-container" class="space-y-2.5">
-                <!-- Populated by JS -->
-            </div>
+            <div id="budget-list-container" class="space-y-2.5"></div>
         </div>
 
         <!-- ================= TAB 4: TRANSPORT & STAY ================= -->
@@ -258,50 +231,35 @@
                     <i class="fa-solid fa-plus-circle"></i><span>添加凭证</span>
                 </button>
             </div>
-
-            <!-- Transport & Stay Cards Container -->
-            <div id="transport-list-container" class="space-y-3">
-                <!-- Populated by JS -->
-            </div>
+            <div id="transport-list-container" class="space-y-3"></div>
         </div>
 
         <!-- ================= TAB 5: ATTRACTIONS & DINING ================= -->
         <div id="tab-attractions" class="tab-content space-y-4 hidden">
-            <!-- Filter Pills -->
             <div class="flex space-x-2">
                 <button onclick="filterAttractions('all')" id="filter-btn-all" class="flex-1 py-2.5 text-sm font-medium rounded-xl bg-apple-blue text-white transition">全部</button>
                 <button onclick="filterAttractions('attraction')" id="filter-btn-attraction" class="flex-1 py-2.5 text-sm font-medium rounded-xl bg-white text-apple-textSecondary border border-apple-border transition">景点</button>
                 <button onclick="filterAttractions('dining')" id="filter-btn-dining" class="flex-1 py-2.5 text-sm font-medium rounded-xl bg-white text-apple-textSecondary border border-apple-border transition">美食</button>
             </div>
-
             <div class="flex justify-between items-center px-1">
                 <h3 class="text-base font-semibold">心愿清单</h3>
                 <button onclick="openAttractionModal()" class="text-sm text-apple-blue font-medium flex items-center space-x-1">
                     <i class="fa-solid fa-plus-circle"></i><span>添加去处</span>
                 </button>
             </div>
-
-            <!-- Attractions Container -->
-            <div id="attractions-list-container" class="space-y-3">
-                <!-- Populated by JS -->
-            </div>
+            <div id="attractions-list-container" class="space-y-3"></div>
         </div>
 
-        <!-- ================= TAB 6: PACKING LIST (DUAL MODE ENHANCED) ================= -->
+        <!-- ================= TAB 6: PACKING LIST ================= -->
         <div id="tab-packing" class="tab-content space-y-4 hidden">
-            <!-- Distinct User Switcher Header -->
             <div class="bg-gray-200/80 p-1.5 rounded-2xl flex relative">
                 <button onclick="switchPackingUser('user1')" id="btn-pack-user1" class="flex-1 py-2.5 text-sm font-semibold rounded-xl bg-white text-apple-blue shadow-sm transition flex items-center justify-center space-x-1">
-                    <i class="fa-solid fa-user"></i>
-                    <span>我的行李</span>
+                    <i class="fa-solid fa-user"></i><span>我的行李</span>
                 </button>
                 <button onclick="switchPackingUser('user2')" id="btn-pack-user2" class="flex-1 py-2.5 text-sm font-semibold rounded-xl text-apple-textSecondary transition flex items-center justify-center space-x-1">
-                    <i class="fa-solid fa-user-group"></i>
-                    <span>同伴行李</span>
+                    <i class="fa-solid fa-user-group"></i><span>同伴行李</span>
                 </button>
             </div>
-
-            <!-- Active User Indicator Banner -->
             <div id="packing-user-badge" class="px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center justify-between bg-blue-50 text-apple-blue border border-blue-100">
                 <span class="flex items-center space-x-1.5">
                     <i class="fa-solid fa-circle-info"></i>
@@ -309,62 +267,47 @@
                 </span>
                 <span id="packing-user-count" class="bg-white px-2 py-0.5 rounded-full shadow-xs">0 选</span>
             </div>
-
             <div class="flex justify-between items-center px-1">
                 <h3 id="packing-mode-title" class="text-base font-semibold text-apple-textPrimary">行李分类明细</h3>
                 <button onclick="openPackingModal()" class="text-sm text-apple-blue font-medium flex items-center space-x-1 bg-white px-3 py-1.5 rounded-xl border border-apple-border shadow-xs">
                     <i class="fa-solid fa-plus-circle"></i><span>添加物品</span>
                 </button>
             </div>
-
-            <!-- Packing Categories Container -->
-            <div id="packing-container" class="space-y-3">
-                <!-- Populated by JS -->
-            </div>
+            <div id="packing-container" class="space-y-3"></div>
         </div>
-
     </main>
 
-    <!-- Bottom Tab Bar (iOS Style Glass) -->
+    <!-- Bottom Tab Bar -->
     <nav class="glass-nav absolute bottom-0 left-0 right-0 h-20 border-t border-black/5 flex items-around justify-around px-2 z-40">
         <button onclick="switchTab('overview')" id="nav-overview" class="flex flex-col items-center justify-center flex-1 text-apple-blue transition py-1.5">
-            <i class="fa-solid fa-house text-xl"></i>
-            <span class="text-xs mt-1 font-medium">概览</span>
+            <i class="fa-solid fa-house text-xl"></i><span class="text-xs mt-1 font-medium">概览</span>
         </button>
         <button onclick="switchTab('schedule')" id="nav-schedule" class="flex flex-col items-center justify-center flex-1 text-apple-textSecondary transition py-1.5">
-            <i class="fa-solid fa-calendar-days text-xl"></i>
-            <span class="text-xs mt-1 font-medium">行程</span>
+            <i class="fa-solid fa-calendar-days text-xl"></i><span class="text-xs mt-1 font-medium">行程</span>
         </button>
         <button onclick="switchTab('budget')" id="nav-budget" class="flex flex-col items-center justify-center flex-1 text-apple-textSecondary transition py-1.5">
-            <i class="fa-solid fa-wallet text-xl"></i>
-            <span class="text-xs mt-1 font-medium">预算</span>
+            <i class="fa-solid fa-wallet text-xl"></i><span class="text-xs mt-1 font-medium">预算</span>
         </button>
         <button onclick="switchTab('transport')" id="nav-transport" class="flex flex-col items-center justify-center flex-1 text-apple-textSecondary transition py-1.5">
-            <i class="fa-solid fa-ticket text-xl"></i>
-            <span class="text-xs mt-1 font-medium">交通住宿</span>
+            <i class="fa-solid fa-ticket text-xl"></i><span class="text-xs mt-1 font-medium">交通住宿</span>
         </button>
         <button onclick="switchTab('attractions')" id="nav-attractions" class="flex flex-col items-center justify-center flex-1 text-apple-textSecondary transition py-1.5">
-            <i class="fa-solid fa-utensils text-xl"></i>
-            <span class="text-xs mt-1 font-medium">景点美食</span>
+            <i class="fa-solid fa-utensils text-xl"></i><span class="text-xs mt-1 font-medium">景点美食</span>
         </button>
         <button onclick="switchTab('packing')" id="nav-packing" class="flex flex-col items-center justify-center flex-1 text-apple-textSecondary transition py-1.5">
-            <i class="fa-solid fa-suitcase text-xl"></i>
-            <span class="text-xs mt-1 font-medium">行李</span>
+            <i class="fa-solid fa-suitcase text-xl"></i><span class="text-xs mt-1 font-medium">行李</span>
         </button>
     </nav>
 
     <!-- ================= MODALS ================= -->
-
-    <!-- Multi-user Live Share Modal -->
+    <!-- Multi-user Share Modal -->
     <div id="modal-share" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center sm:p-4">
         <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 space-y-4 max-h-[90vh] overflow-y-auto tab-content">
             <div class="flex justify-between items-center">
                 <h3 class="font-semibold text-xl">多人在线共享协同</h3>
                 <button onclick="closeModal('modal-share')" class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-apple-textSecondary"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-            <p class="text-sm text-apple-textSecondary leading-relaxed">
-                只需将共享链接发送给同行伙伴，对方打开链接即可进入同一房间实时协同编辑！
-            </p>
+            <p class="text-sm text-apple-textSecondary leading-relaxed">复制下方共享链接发给同伴（或把房间号发给对方）。双方打开后即可实时同步编辑！</p>
             <div class="space-y-3">
                 <div>
                     <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">协同房间 ID</label>
@@ -374,10 +317,9 @@
                     </div>
                 </div>
             </div>
-            <div class="pt-2 flex flex-col space-y-2">
+            <div class="pt-2">
                 <button onclick="copyShareLink()" class="w-full py-3.5 rounded-xl bg-emerald-600 text-white font-medium text-base shadow-md hover:bg-emerald-700 transition flex items-center justify-center space-x-2">
-                    <i class="fa-solid fa-link"></i>
-                    <span>复制实时共享邀请链接</span>
+                    <i class="fa-solid fa-link"></i><span>复制实时共享邀请链接</span>
                 </button>
             </div>
         </div>
@@ -418,16 +360,13 @@
     <div id="modal-schedule" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center sm:p-4">
         <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 space-y-4 max-h-[90vh] overflow-y-auto tab-content">
             <div class="flex justify-between items-center">
-                <h3 id="schedule-modal-title" class="font-semibold text-xl">添加行程安排</h3>
+                <h3 class="font-semibold text-xl">添加行程安排</h3>
                 <button onclick="closeModal('modal-schedule')" class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-apple-textSecondary"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-            <input type="hidden" id="sch-id">
             <div class="space-y-3">
                 <div>
                     <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">选择天数</label>
-                    <select id="sch-day" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-3 text-base focus:outline-none focus:border-apple-blue">
-                        <!-- Populated dynamically -->
-                    </select>
+                    <select id="sch-day" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-3 text-base focus:outline-none focus:border-apple-blue"></select>
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
@@ -441,15 +380,11 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">标题</label>
-                    <input type="text" id="sch-title" placeholder="例如：海边日出与看海打卡" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-3 text-base focus:outline-none focus:border-apple-blue">
+                    <input type="text" id="sch-title" placeholder="例如：海边日出打卡" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-3 text-base focus:outline-none focus:border-apple-blue">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">详细备注</label>
-                    <textarea id="sch-notes" rows="2" placeholder="提前查看日出时间，携带保暖外套..." class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-2.5 text-base focus:outline-none focus:border-apple-blue"></textarea>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">上传现场/凭证图片</label>
-                    <input type="file" id="sch-image" accept="image/*" class="w-full text-sm text-apple-textSecondary file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-apple-blue hover:file:bg-blue-100">
+                    <textarea id="sch-notes" rows="2" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-2.5 text-base focus:outline-none focus:border-apple-blue"></textarea>
                 </div>
             </div>
             <button onclick="saveSchedule()" class="w-full py-3.5 rounded-xl bg-apple-blue text-white font-medium text-base shadow-md hover:bg-apple-blueHover transition">保存行程</button>
@@ -472,12 +407,7 @@
                     <div>
                         <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">分类</label>
                         <select id="bud-category" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-3 text-base focus:outline-none focus:border-apple-blue">
-                            <option value="交通">交通</option>
-                            <option value="餐饮">餐饮</option>
-                            <option value="住宿">住宿</option>
-                            <option value="门票">门票</option>
-                            <option value="购物">购物</option>
-                            <option value="其他">其他</option>
+                            <option value="交通">交通</option><option value="餐饮">餐饮</option><option value="住宿">住宿</option><option value="门票">门票</option><option value="购物">购物</option><option value="其他">其他</option>
                         </select>
                     </div>
                 </div>
@@ -487,14 +417,14 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">账目描述</label>
-                    <input type="text" id="bud-title" placeholder="例如：海鲜大排档大餐" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-3 text-base focus:outline-none focus:border-apple-blue">
+                    <input type="text" id="bud-title" placeholder="例如：海鲜大餐" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-3 text-base focus:outline-none focus:border-apple-blue">
                 </div>
             </div>
             <button onclick="saveBudget()" class="w-full py-3.5 rounded-xl bg-apple-blue text-white font-medium text-base shadow-md hover:bg-apple-blueHover transition">保存账目</button>
         </div>
     </div>
 
-    <!-- Transport & Stay Modal -->
+    <!-- Transport Modal -->
     <div id="modal-transport" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center sm:p-4">
         <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 space-y-4 max-h-[90vh] overflow-y-auto tab-content">
             <div class="flex justify-between items-center">
@@ -505,31 +435,26 @@
                 <div>
                     <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">类型</label>
                     <select id="ts-type" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-3 text-base focus:outline-none focus:border-apple-blue">
-                        <option value="transport">往返车票 / 机票</option>
-                        <option value="stay">酒店住宿</option>
+                        <option value="transport">往返车票 / 机票</option><option value="stay">酒店住宿</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">名称 / 班次 / 酒店名</label>
-                    <input type="text" id="ts-title" placeholder="例如：高铁 G1234 / 北戴河海景酒店" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-3 text-base focus:outline-none focus:border-apple-blue">
+                    <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">名称 / 班次</label>
+                    <input type="text" id="ts-title" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-3 text-base focus:outline-none focus:border-apple-blue">
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">时间 / 入住期</label>
-                        <input type="text" id="ts-time" placeholder="11.13 08:30" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-2.5 text-base focus:outline-none focus:border-apple-blue">
+                        <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">时间</label>
+                        <input type="text" id="ts-time" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-2.5 text-base focus:outline-none focus:border-apple-blue">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">确认号 / 座位</label>
-                        <input type="text" id="ts-code" placeholder="车厢05车08F / 订单号 #991" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-2.5 text-base focus:outline-none focus:border-apple-blue">
+                        <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">确认号</label>
+                        <input type="text" id="ts-code" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-2.5 text-base focus:outline-none focus:border-apple-blue">
                     </div>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">详细地址 / 备注</label>
-                    <input type="text" id="ts-desc" placeholder="秦皇岛市北戴河区海滨大道" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-3 text-base focus:outline-none focus:border-apple-blue">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">上传车票/订单凭证图片</label>
-                    <input type="file" id="ts-image" accept="image/*" class="w-full text-sm text-apple-textSecondary file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-apple-blue hover:file:bg-blue-100">
+                    <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">备注 / 地址</label>
+                    <input type="text" id="ts-desc" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-3 text-base focus:outline-none focus:border-apple-blue">
                 </div>
             </div>
             <button onclick="saveTransport()" class="w-full py-3.5 rounded-xl bg-apple-blue text-white font-medium text-base shadow-md hover:bg-apple-blueHover transition">保存凭证</button>
@@ -548,41 +473,34 @@
                     <div>
                         <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">类型</label>
                         <select id="att-type" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-3 text-base focus:outline-none focus:border-apple-blue">
-                            <option value="attraction">观光景点</option>
-                            <option value="dining">特色餐厅</option>
+                            <option value="attraction">观光景点</option><option value="dining">特色餐厅</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">评分</label>
                         <select id="att-rating" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-3 text-base focus:outline-none focus:border-apple-blue">
-                            <option value="5">⭐⭐⭐⭐⭐ (极力推荐)</option>
-                            <option value="4">⭐⭐⭐⭐ (值得一去)</option>
-                            <option value="3">⭐⭐⭐ (普通)</option>
+                            <option value="5">⭐⭐⭐⭐⭐</option><option value="4">⭐⭐⭐⭐</option><option value="3">⭐⭐⭐</option>
                         </select>
                     </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">名称</label>
-                    <input type="text" id="att-name" placeholder="例如：老龙头 / 浅水湾看海" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-3 text-base focus:outline-none focus:border-apple-blue">
+                    <input type="text" id="att-name" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-3 text-base focus:outline-none focus:border-apple-blue">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">人均消费 / 门票价格</label>
-                    <input type="text" id="att-price" placeholder="约 ¥50 /人" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-3 text-base focus:outline-none focus:border-apple-blue">
+                    <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">人均消费</label>
+                    <input type="text" id="att-price" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-3 text-base focus:outline-none focus:border-apple-blue">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">详细笔记与攻略</label>
-                    <textarea id="att-notes" rows="2" placeholder="建议早上去拍照，傍晚看海景极佳..." class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-2.5 text-base focus:outline-none focus:border-apple-blue"></textarea>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">上传照片</label>
-                    <input type="file" id="att-image" accept="image/*" class="w-full text-sm text-apple-textSecondary file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-apple-blue hover:file:bg-blue-100">
+                    <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">备注</label>
+                    <textarea id="att-notes" rows="2" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-2.5 text-base focus:outline-none focus:border-apple-blue"></textarea>
                 </div>
             </div>
             <button onclick="saveAttraction()" class="w-full py-3.5 rounded-xl bg-apple-blue text-white font-medium text-base shadow-md hover:bg-apple-blueHover transition">保存去处</button>
         </div>
     </div>
 
-    <!-- Packing Modal (WITH CLEAR TARGET SWITCHING) -->
+    <!-- Packing Modal -->
     <div id="modal-packing" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center sm:p-4">
         <div class="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl p-6 space-y-4 max-h-[90vh] overflow-y-auto tab-content">
             <div class="flex justify-between items-center">
@@ -595,145 +513,72 @@
                     <div class="grid grid-cols-2 gap-2">
                         <label class="flex items-center justify-center space-x-2 p-3 border rounded-xl cursor-pointer bg-blue-50 border-apple-blue text-apple-blue font-semibold" id="label-pack-target-user1">
                             <input type="radio" name="pack-target-user" value="user1" checked onchange="updatePackingModalTargetStyle()" class="hidden">
-                            <i class="fa-solid fa-user"></i>
-                            <span>我的行李</span>
+                            <i class="fa-solid fa-user"></i><span>我的行李</span>
                         </label>
                         <label class="flex items-center justify-center space-x-2 p-3 border rounded-xl cursor-pointer border-apple-border text-apple-textSecondary" id="label-pack-target-user2">
                             <input type="radio" name="pack-target-user" value="user2" onchange="updatePackingModalTargetStyle()" class="hidden">
-                            <i class="fa-solid fa-user-group"></i>
-                            <span>同伴行李</span>
+                            <i class="fa-solid fa-user-group"></i><span>同伴行李</span>
                         </label>
                     </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">分类</label>
                     <select id="pack-cat" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-3 text-base focus:outline-none focus:border-apple-blue">
-                        <option value="证件与票据">证件与票据</option>
-                        <option value="电子数码">电子数码</option>
-                        <option value="衣物穿搭">衣物穿搭</option>
-                        <option value="洗护日常">洗护日常</option>
-                        <option value="其他杂物">其他杂物</option>
+                        <option value="证件与票据">证件与票据</option><option value="电子数码">电子数码</option><option value="衣物穿搭">衣物穿搭</option><option value="洗护日常">洗护日常</option><option value="其他杂物">其他杂物</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">物品名称</label>
-                    <input type="text" id="pack-name" placeholder="例如：厚羽绒服、相机、三脚架" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-3 text-base focus:outline-none focus:border-apple-blue">
+                    <input type="text" id="pack-name" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-3 text-base focus:outline-none focus:border-apple-blue">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">说明 / 备注</label>
-                    <input type="text" id="pack-note" placeholder="例如：黑色长款，防海风用" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-3 text-base focus:outline-none focus:border-apple-blue">
+                    <label class="block text-sm font-medium text-apple-textSecondary mb-1.5">备注</label>
+                    <input type="text" id="pack-note" class="w-full bg-apple-grayBg border border-apple-border rounded-xl px-4 py-3 text-base focus:outline-none focus:border-apple-blue">
                 </div>
             </div>
             <button onclick="savePacking()" class="w-full py-3.5 rounded-xl bg-apple-blue text-white font-medium text-base shadow-md hover:bg-apple-blueHover transition">保存并添加</button>
         </div>
     </div>
 
-    <!-- Custom Toast Notification -->
-    <div id="toast" class="fixed top-20 left-1/2 transform -translate-x-1/2 bg-gray-900/90 backdrop-blur-md text-white px-5 py-2.5 rounded-2xl text-sm font-medium shadow-xl opacity-0 pointer-events-none transition-all duration-300 z-50">
-        提示信息
-    </div>
+    <div id="toast" class="fixed top-20 left-1/2 transform -translate-x-1/2 bg-gray-900/90 backdrop-blur-md text-white px-5 py-2.5 rounded-2xl text-sm font-medium shadow-xl opacity-0 pointer-events-none transition-all duration-300 z-50">提示信息</div>
 
     <!-- ================= JAVASCRIPT LOGIC ================= -->
     <script>
-        // Default Data
+        // ================================================================
+        // ⚠️ 请替换为你的 YESAPI AppKey ⚠️
+        // ================================================================
+        const YESAPI_APPKEY = 'YOUR_APP_KEY_HERE'; 
+        const YESAPI_TABLE  = 'trip_rooms';
+        const YESAPI_BASE   = 'https://api.yesapi.cn';
+
         const defaultData = {
-            trip: {
-                title: "GoGoGo！周末出逃计划",
-                startDate: "2026.11.13",
-                endDate: "2026.11.15",
-                budget: 3000
-            },
+            trip: { title: "GoGoGo！周末出逃计划", startDate: "2026.11.13", endDate: "2026.11.15", budget: 3000 },
             schedule: {
-                "Day 1": [
-                    { id: 1, time: "10:00", location: "秦皇岛站", title: "抵达秦皇岛并入住海边酒店", notes: "放置行李，整理衣物 prepare 出游。", image: "" },
-                    { id: 2, time: "14:30", location: "阿那亚社区", title: "游览阿那亚礼堂与孤独图书馆", notes: "打卡经典建筑，欣赏初冬海景。", image: "" }
-                ],
-                "Day 2": [
-                    { id: 3, time: "06:30", location: "鸽子窝公园", title: "观看海上日出与观鸟", notes: "秦皇岛标志性日出观赏点，注意防风保暖。", image: "" },
-                    { id: 4, time: "12:00", location: "海鲜大排档", title: "品尝秦皇岛本地特色海鲜巨咖", notes: "螃蟹、皮皮虾与蒸汽海鲜体验。", image: "" }
-                ],
-                "Day 3": [
-                    { id: 5, time: "09:30", location: "老龙头景区", title: "参观明长城东部起点老龙头", notes: "感受长城入海的壮观奇景。", image: "" }
-                ]
+                "Day 1": [{ id: 1, time: "10:00", location: "秦皇岛站", title: "抵达秦皇岛并入住海边酒店", notes: "放置行李，整理衣物 prepare 出游。", image: "" }],
+                "Day 2": [{ id: 3, time: "06:30", location: "鸽子窝公园", title: "观看海上日出与观鸟", notes: "秦皇岛标志性日出观赏点，注意防风保暖。", image: "" }],
+                "Day 3": [{ id: 5, time: "09:30", location: "老龙头景区", title: "参观明长城东部起点老龙头", notes: "感受长城入海的壮观奇景。", image: "" }]
             },
-            budgetList: [
-                { id: 1, title: "高铁往返车票", category: "交通", amount: 600, payer: "我" },
-                { id: 2, title: "阿那亚海景民宿2晚", category: "住宿", amount: 1200, payer: "同伴" }
-            ],
-            transportList: [
-                { id: 1, type: "transport", title: "高铁 G1234 班次", time: "11.13 08:00", code: "座位 06C/06D", desc: "北京南站 -> 秦皇岛站", image: "" },
-                { id: 2, type: "stay", title: "阿那亚海边阿卡迪亚酒店", time: "11.13 - 11.15", code: "确认号 #QHD882", desc: "秦皇岛昌黎县黄金海岸", image: "" }
-            ],
-            attractionsList: [
-                { id: 1, type: "attraction", name: "阿那亚礼堂", rating: "5", price: "免费需预约", notes: "海边的标志性白色建筑，极其出片", image: "" },
-                { id: 2, type: "dining", name: "蒸汽海鲜坊", rating: "5", price: "人均 ¥120", notes: "食材新鲜，海鲜原汁原味", image: "" }
-            ],
-            packingListUser1: {
-                "证件与票据": [{ id: 1, name: "身份证", checked: true, note: "随身携带" }],
-                "电子数码": [
-                    { id: 2, name: "相机与相机电池", checked: false, note: "拍摄海景" },
-                    { id: 3, name: "手机充电宝", checked: false, note: "20000mAh" }
-                ],
-                "衣物穿搭": [{ id: 4, name: "防风羽绒服", checked: false, note: "11月秦皇岛海风较大" }]
-            },
-            packingListUser2: {
-                "洗护日常": [{ id: 5, name: "便携洗漱包", checked: true, note: "包含双人牙刷与护肤品" }],
-                "其他杂物": [
-                    { id: 6, name: "保温杯", checked: false, note: "装热水日出时喝" },
-                    { id: 7, name: "暖宝宝", checked: false, note: "带10贴防寒" }
-                ]
-            }
+            budgetList: [{ id: 1, title: "高铁往返车票", category: "交通", amount: 600, payer: "我" }],
+            transportList: [{ id: 1, type: "transport", title: "高铁 G1234 班次", time: "11.13 08:00", code: "座位 06C", desc: "北京南 -> 秦皇岛", image: "" }],
+            attractionsList: [{ id: 1, type: "attraction", name: "阿那亚礼堂", rating: "5", price: "免费", notes: "极其出片", image: "" }],
+            packingListUser1: { "证件与票据": [{ id: 1, name: "身份证", checked: true, note: "随身携带" }] },
+            packingListUser2: { "洗护日常": [{ id: 5, name: "洗漱包", checked: false, note: "" }] }
         };
 
-        // State Management
-        let roomID = getQueryParam('room') || 'default_room';
-        let storageKey = `gogogo_data_${roomID}`;
-        let appData = loadLocalData();
+        let roomID = null;
+        let recordId = null; // 当前房间记录在 YesApi 中的主键 id
+        let appData = JSON.parse(JSON.stringify(defaultData));
         let currentActiveDay = "Day 1";
         let currentAttrFilter = "all";
-        let currentPackingUser = "user1"; // 'user1' (我的) or 'user2' (同伴的)
+        let currentPackingUser = "user1";
+        let isSyncing = false;
+        let pollTimer = null;
 
-        function getQueryParam(param) {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get(param);
-        }
-
-        function loadLocalData() {
-            const local = localStorage.getItem(storageKey);
-            return local ? JSON.parse(local) : defaultData;
-        }
-
-        // Multi-tab / Multi-window Real-time Synchronization Fix
-        const syncChannel = new BroadcastChannel(`gogogo_channel_${roomID}`);
-        
-        syncChannel.onmessage = (event) => {
-            if (event.data && event.data.type === 'DATA_UPDATED') {
-                appData = event.data.payload;
-                renderAll();
-                showToast("同伴更新了内容，已同步刷新！");
-            }
-        };
-
-        // Storage Event Listener as Backup Sync
-        window.addEventListener('storage', (e) => {
-            if (e.key === storageKey && e.newValue) {
-                appData = JSON.parse(e.newValue);
-                renderAll();
-                showToast("数据已更新！");
-            }
-        });
-
-        function saveData() {
-            const serialized = JSON.stringify(appData);
-            localStorage.setItem(storageKey, serialized);
-            // Broadcast to other windows/tabs
-            try {
-                syncChannel.postMessage({
-                    type: 'DATA_UPDATED',
-                    payload: appData
-                });
-            } catch(e){}
-            renderAll();
+        function getQueryParam(name) { return new URLSearchParams(window.location.search).get(name); }
+        function setQueryParam(name, value) {
+            const url = new URL(window.location.href);
+            url.searchParams.set(name, value);
+            window.history.replaceState({}, '', url);
         }
 
         function showToast(msg) {
@@ -741,13 +586,105 @@
             toast.innerText = msg;
             toast.classList.remove('opacity-0', 'pointer-events-none');
             toast.classList.add('opacity-100');
-            setTimeout(() => {
+            clearTimeout(toast._t);
+            toast._t = setTimeout(() => {
                 toast.classList.remove('opacity-100');
                 toast.classList.add('opacity-0', 'pointer-events-none');
             }, 2000);
         }
 
-        // Navigation Switcher
+        // ================================================================
+        // YesApi 云端读写逻辑
+        // ================================================================
+        async function apiFetch(paramsObj, isPost = false) {
+            const params = new URLSearchParams({ ...paramsObj, app_key: YESAPI_APPKEY, model_name: YESAPI_TABLE });
+            try {
+                const res = await fetch(`${YESAPI_BASE}/?${params.toString()}`, { method: isPost ? 'POST' : 'GET' });
+                return await res.json();
+            } catch (e) {
+                console.error('API Request Failed', e);
+                return { ret: 500, msg: '网络请求失败' };
+            }
+        }
+
+        async function initCloud() {
+            let urlRoom = getQueryParam('room');
+            if (!urlRoom) {
+                urlRoom = 'room_' + Math.random().toString(36).slice(2, 8);
+                setQueryParam('room', urlRoom);
+            }
+            roomID = urlRoom;
+
+            // 1. 查询该房间是否已存在
+            const findRes = await apiFetch({ s: 'App.Table.FreeQuery', where: `room_id="${roomID}"`, return_data: '1' });
+            
+            if (findRes.ret === 200 && findRes.data.list && findRes.data.list.length > 0) {
+                // 房间已存在，加载数据
+                const item = findRes.data.list[0];
+                recordId = item.id;
+                appData = JSON.parse(item.trip_data);
+            } else {
+                // 房间不存在，创建新记录
+                appData = JSON.parse(JSON.stringify(defaultData));
+                const createRes = await apiFetch({
+                    s: 'App.Table.Create',
+                    data: JSON.stringify({ room_id: roomID, trip_data: JSON.stringify(appData) })
+                }, true);
+
+                if (createRes.ret === 200 && createRes.data.id) {
+                    recordId = createRes.data.id;
+                } else {
+                    showToast('云端初始化失败，请检查 AppKey 或表结构');
+                }
+            }
+
+            // 渲染页面
+            document.getElementById('loading-mask').style.display = 'none';
+            renderAll();
+            fetchWeather();
+
+            // 启动轮询 (每 5 秒拉取一次最新数据)
+            if (recordId) {
+                if (pollTimer) clearInterval(pollTimer);
+                pollTimer = setInterval(pullFromCloud, 5000);
+            }
+        }
+
+        async function pullFromCloud() {
+            if (!recordId || isSyncing) return;
+            const res = await apiFetch({ s: 'App.Table.FreeQuery', where: `id=${recordId}`, return_data: '1' });
+            
+            if (res.ret === 200 && res.data.list && res.data.list.length > 0) {
+                const remoteDataStr = res.data.list[0].trip_data;
+                // 如果发现云端数据和本地不同，且本地没有正在进行未保存的修改
+                if (remoteDataStr !== JSON.stringify(appData)) {
+                    appData = JSON.parse(remoteDataStr);
+                    renderAll();
+                    showToast('已同步同伴的最新修改');
+                }
+            }
+        }
+
+        async function saveData() {
+            renderAll(); // 立即更新本地界面
+            if (!recordId) return;
+
+            isSyncing = true;
+            const res = await apiFetch({
+                s: 'App.Table.Update',
+                id: recordId,
+                data: JSON.stringify({ trip_data: JSON.stringify(appData) })
+            }, true);
+            isSyncing = false;
+
+            if (res.ret !== 200) {
+                showToast('云端同步失败，网络可能不稳定');
+            }
+        }
+
+        // ================================================================
+        // 以下为你的原有 UI 逻辑 (无需改动)
+        // ================================================================
         function switchTab(tabId) {
             const tabs = ['overview', 'schedule', 'budget', 'transport', 'attractions', 'packing'];
             tabs.forEach(t => {
@@ -760,11 +697,9 @@
             const activeNav = document.getElementById(`nav-${tabId}`);
             activeNav.classList.remove('text-apple-textSecondary');
             activeNav.classList.add('text-apple-blue');
-            
             document.getElementById('main-container').scrollTop = 0;
         }
 
-        // Calculate Trip Days
         function getTripDaysCount() {
             const start = new Date(appData.trip.startDate);
             const end = new Date(appData.trip.endDate);
@@ -776,13 +711,10 @@
         function getDaysArray() {
             const count = getTripDaysCount();
             let arr = [];
-            for(let i=1; i<=count; i++) {
-                arr.push(`Day ${i}`);
-            }
+            for(let i=1; i<=count; i++) arr.push(`Day ${i}`);
             return arr;
         }
 
-        // Real-time Weather Fetching
         async function fetchWeather() {
             const currentTempEl = document.getElementById('weather-current-temp');
             currentTempEl.innerText = "正在拉取最新预报...";
@@ -790,9 +722,7 @@
                 const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=39.935&longitude=119.597&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=Asia%2FShanghai');
                 const data = await res.json();
                 if(data && data.current_weather) {
-                    const temp = data.current_weather.temperature;
-                    const wind = data.current_weather.windspeed;
-                    currentTempEl.innerText = `实时温度 ${temp}°C丨风速 ${wind} km/h`;
+                    currentTempEl.innerText = `实时温度 ${data.current_weather.temperature}°C丨风速 ${data.current_weather.windspeed} km/h`;
                 }
                 if(data && data.daily) {
                     const dates = ["11.13", "11.14", "11.15"];
@@ -806,9 +736,7 @@
                                 <div class="font-medium text-gray-500">${dates[i]}</div>
                                 <i class="fa-solid fa-cloud-sun text-amber-500 my-1 text-lg"></i>
                                 <div class="font-bold text-apple-textPrimary">${minT}°C ~ ${maxT}°C</div>
-                                <div class="text-xs text-gray-400">海滨气温</div>
-                            </div>
-                        `;
+                            </div>`;
                     }
                 }
             } catch(e) {
@@ -816,7 +744,6 @@
             }
         }
 
-        // Multi-user Share Functions
         function openShareModal() {
             document.getElementById('share-room-input').value = roomID;
             document.getElementById('modal-share').classList.remove('hidden');
@@ -824,10 +751,7 @@
 
         function joinShareRoom() {
             const inputVal = document.getElementById('share-room-input').value.trim();
-            if(inputVal) {
-                const newUrl = window.location.pathname + '?room=' + encodeURIComponent(inputVal);
-                window.location.href = newUrl;
-            }
+            if(inputVal) window.location.href = window.location.pathname + '?room=' + encodeURIComponent(inputVal);
         }
 
         function copyShareLink() {
@@ -839,22 +763,17 @@
             });
         }
 
-        // Render All Components
         function renderAll() {
-            // Header & Room Info
             document.getElementById('trip-title-display').innerText = appData.trip.title;
             document.getElementById('trip-date-display').innerText = `${appData.trip.startDate} - ${appData.trip.endDate}`;
             document.getElementById('current-room-display').innerText = roomID;
 
-            // Overview Countdown
             const start = new Date(appData.trip.startDate);
             const today = new Date();
-            const diffTime = start - today;
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const diffDays = Math.ceil((start - today) / (1000 * 60 * 60 * 24));
             document.getElementById('countdown-days').innerText = diffDays >= 0 ? diffDays : 0;
             document.getElementById('stat-days').innerText = `${getTripDaysCount()} 天`;
 
-            // Budget calculations
             let totalSpent = appData.budgetList.reduce((acc, item) => acc + Number(item.amount), 0);
             let totalBudget = Number(appData.trip.budget);
             let remaining = totalBudget - totalSpent;
@@ -862,12 +781,10 @@
 
             document.getElementById('overview-budget-text').innerText = `已花 ¥${totalSpent} / 总 ¥${totalBudget}`;
             document.getElementById('overview-budget-bar').style.width = `${percent}%`;
-
             document.getElementById('budget-total').innerText = `¥ ${totalBudget.toLocaleString()}`;
             document.getElementById('budget-spent').innerText = `¥ ${totalSpent.toLocaleString()}`;
             document.getElementById('budget-remaining').innerText = `¥ ${remaining.toLocaleString()}`;
 
-            // Render Modules
             renderSchedule();
             renderBudgetList();
             renderTransportList();
@@ -875,82 +792,57 @@
             renderPackingList();
         }
 
-        // Schedule Render
         function renderSchedule() {
             const days = getDaysArray();
             const pillsContainer = document.getElementById('day-pills-container');
             pillsContainer.innerHTML = '';
-            
-            if (!appData.schedule[currentActiveDay] && days.length > 0) {
-                currentActiveDay = days[0];
-            }
+            if (!appData.schedule[currentActiveDay] && days.length > 0) currentActiveDay = days[0];
 
             days.forEach(day => {
-                const isSelected = day === currentActiveDay;
-                pillsContainer.innerHTML += `
-                    <button onclick="switchDay('${day}')" class="px-5 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition ${isSelected ? 'bg-apple-blue text-white shadow-sm' : 'bg-white text-apple-textSecondary border border-apple-border'}">
-                        ${day}
-                    </button>
-                `;
+                pillsContainer.innerHTML += `<button onclick="switchDay('${day}')" class="px-5 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition ${day === currentActiveDay ? 'bg-apple-blue text-white shadow-sm' : 'bg-white text-apple-textSecondary border border-apple-border'}">${day}</button>`;
             });
 
-            // Populate Day Selector in Modal
             const schDaySelect = document.getElementById('sch-day');
             schDaySelect.innerHTML = '';
-            days.forEach(day => {
-                schDaySelect.innerHTML += `<option value="${day}">${day}</option>`;
-            });
+            days.forEach(day => { schDaySelect.innerHTML += `<option value="${day}">${day}</option>`; });
 
             const timelineContainer = document.getElementById('schedule-timeline-container');
             timelineContainer.innerHTML = '';
             const items = appData.schedule[currentActiveDay] || [];
-
             if (items.length === 0) {
-                timelineContainer.innerHTML = `<div class="text-center py-8 text-sm text-apple-textSecondary">当天暂无行程安排，点击下方按钮添加。</div>`;
+                timelineContainer.innerHTML = `<div class="text-center py-8 text-sm text-apple-textSecondary">当天暂无安排，点击下方按钮添加。</div>`;
                 return;
             }
-
-            items.forEach((item) => {
+            items.forEach(item => {
                 timelineContainer.innerHTML += `
                     <div class="glass-card rounded-2xl p-5 shadow-sm relative pl-7 border-l-4 border-apple-blue">
                         <div class="flex justify-between items-start">
                             <span class="text-sm font-semibold text-apple-blue bg-blue-50 px-2.5 py-1 rounded-md"><i class="fa-regular fa-clock mr-1"></i>${item.time}</span>
-                            <button onclick="deleteScheduleItem('${currentActiveDay}', ${item.id})" class="text-gray-300 hover:text-rose-500 text-base transition"><i class="fa-solid fa-trash-can"></i></button>
+                            <button onclick="deleteScheduleItem('${currentActiveDay}', ${item.id})" class="text-gray-300 hover:text-rose-500 text-base"><i class="fa-solid fa-trash-can"></i></button>
                         </div>
                         <h4 class="font-semibold text-base mt-2 text-apple-textPrimary">${item.title}</h4>
-                        <div class="text-sm text-apple-textSecondary mt-1 flex items-center"><i class="fa-solid fa-location-dot mr-1 text-apple-blue"></i>${item.location || '未指定地点'}</div>
+                        <div class="text-sm text-apple-textSecondary mt-1"><i class="fa-solid fa-location-dot mr-1 text-apple-blue"></i>${item.location || '未指定'}</div>
                         ${item.notes ? `<p class="text-sm text-apple-textSecondary mt-2 bg-gray-50 p-3 rounded-xl">${item.notes}</p>` : ''}
-                        ${item.image ? `<div class="mt-3"><img src="${item.image}" class="w-full h-40 object-cover rounded-xl shadow-sm" alt="凭证图片"></div>` : ''}
-                    </div>
-                `;
+                    </div>`;
             });
         }
 
-        function switchDay(day) {
-            currentActiveDay = day;
-            renderSchedule();
-        }
+        function switchDay(day) { currentActiveDay = day; renderSchedule(); }
 
-        // Budget List Render
         function renderBudgetList() {
             const container = document.getElementById('budget-list-container');
             container.innerHTML = '';
-            if(appData.budgetList.length === 0) {
-                container.innerHTML = `<div class="text-center py-6 text-sm text-apple-textSecondary">暂无记账条目</div>`;
-                return;
-            }
+            if(appData.budgetList.length === 0) { container.innerHTML = `<div class="text-center py-6 text-sm text-apple-textSecondary">暂无记账</div>`; return; }
             appData.budgetList.forEach(item => {
                 container.innerHTML += `
                     <div class="glass-card rounded-2xl p-4 shadow-sm flex items-center justify-between">
                         <div class="flex items-center space-x-3">
-                            <div class="w-11 h-11 rounded-xl bg-blue-50 text-apple-blue flex items-center justify-center text-base">
-                                <i class="fa-solid fa-receipt"></i>
-                            </div>
+                            <div class="w-11 h-11 rounded-xl bg-blue-50 text-apple-blue flex items-center justify-center text-base"><i class="fa-solid fa-receipt"></i></div>
                             <div>
                                 <div class="text-base font-semibold">${item.title}</div>
-                                <div class="flex items-center space-x-2 mt-1">
-                                    <span class="text-xs bg-gray-100 text-apple-textSecondary px-2 py-0.5 rounded-md">${item.category}</span>
-                                    <span class="text-xs bg-blue-50 text-apple-blue px-2 py-0.5 rounded-md"><i class="fa-solid fa-user mr-1"></i>付款人: ${item.payer || '通用'}</span>
+                                <div class="flex space-x-2 mt-1">
+                                    <span class="text-xs bg-gray-100 px-2 py-0.5 rounded-md">${item.category}</span>
+                                    <span class="text-xs bg-blue-50 text-apple-blue px-2 py-0.5 rounded-md">付款人: ${item.payer}</span>
                                 </div>
                             </div>
                         </div>
@@ -958,92 +850,65 @@
                             <span class="text-base font-bold text-rose-500">- ¥${item.amount}</span>
                             <button onclick="deleteBudgetItem(${item.id})" class="text-gray-300 hover:text-rose-500 text-sm"><i class="fa-solid fa-xmark"></i></button>
                         </div>
-                    </div>
-                `;
+                    </div>`;
             });
         }
 
-        // Transport & Stay Render
         function renderTransportList() {
             const container = document.getElementById('transport-list-container');
             container.innerHTML = '';
-            if(appData.transportList.length === 0) {
-                container.innerHTML = `<div class="text-center py-6 text-sm text-apple-textSecondary">暂无车票与酒店凭证</div>`;
-                return;
-            }
+            if(appData.transportList.length === 0) { container.innerHTML = `<div class="text-center py-6 text-sm text-apple-textSecondary">暂无凭证</div>`; return; }
             appData.transportList.forEach(item => {
-                const isTransport = item.type === 'transport';
                 container.innerHTML += `
                     <div class="glass-card rounded-2xl p-5 shadow-sm space-y-2">
                         <div class="flex justify-between items-center">
-                            <span class="text-sm font-semibold ${isTransport ? 'bg-purple-50 text-purple-600' : 'bg-emerald-50 text-emerald-600'} px-3 py-1 rounded-lg">
-                                <i class="fa-solid ${isTransport ? 'fa-train' : 'fa-hotel'} mr-1"></i>${isTransport ? '交通车票' : '酒店住宿'}
+                            <span class="text-sm font-semibold ${item.type === 'transport' ? 'bg-purple-50 text-purple-600' : 'bg-emerald-50 text-emerald-600'} px-3 py-1 rounded-lg">
+                                <i class="fa-solid ${item.type === 'transport' ? 'fa-train' : 'fa-hotel'} mr-1"></i>${item.type === 'transport' ? '车票' : '住宿'}
                             </span>
                             <button onclick="deleteTransportItem(${item.id})" class="text-gray-300 hover:text-rose-500 text-base"><i class="fa-solid fa-trash-can"></i></button>
                         </div>
-                        <h4 class="font-semibold text-base text-apple-textPrimary">${item.title}</h4>
+                        <h4 class="font-semibold text-base">${item.title}</h4>
                         <div class="grid grid-cols-2 gap-2 text-sm text-apple-textSecondary">
                             <div><i class="fa-regular fa-clock mr-1"></i>${item.time}</div>
                             <div><i class="fa-solid fa-barcode mr-1"></i>${item.code}</div>
                         </div>
-                        <div class="text-sm text-apple-textSecondary bg-gray-50 p-2.5 rounded-xl"><i class="fa-solid fa-location-dot mr-1"></i>${item.desc}</div>
-                        ${item.image ? `<div class="mt-2"><img src="${item.image}" class="w-full h-36 object-cover rounded-xl" alt="凭证"></div>` : ''}
-                    </div>
-                `;
+                        <div class="text-sm text-apple-textSecondary bg-gray-50 p-2.5 rounded-xl">${item.desc}</div>
+                    </div>`;
             });
         }
 
-        // Attractions Render
         function renderAttractionsList() {
             const container = document.getElementById('attractions-list-container');
             container.innerHTML = '';
-            
-            let filtered = appData.attractionsList;
-            if(currentAttrFilter !== 'all') {
-                filtered = appData.attractionsList.filter(i => i.type === currentAttrFilter);
-            }
-
-            if(filtered.length === 0) {
-                container.innerHTML = `<div class="text-center py-6 text-sm text-apple-textSecondary">暂无相关心愿去处</div>`;
-                return;
-            }
-
+            let filtered = currentAttrFilter === 'all' ? appData.attractionsList : appData.attractionsList.filter(i => i.type === currentAttrFilter);
+            if(filtered.length === 0) { container.innerHTML = `<div class="text-center py-6 text-sm text-apple-textSecondary">暂无去处</div>`; return; }
             filtered.forEach(item => {
-                const isAttraction = item.type === 'attraction';
                 container.innerHTML += `
                     <div class="glass-card rounded-2xl p-5 shadow-sm space-y-2">
                         <div class="flex justify-between items-center">
-                            <span class="text-sm font-semibold ${isAttraction ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'} px-3 py-1 rounded-lg">
-                                <i class="fa-solid ${isAttraction ? 'fa-landmark' : 'fa-utensils'} mr-1"></i>${isAttraction ? '景点' : '餐厅'}
+                            <span class="text-sm font-semibold ${item.type === 'attraction' ? 'bg-amber-50 text-amber-600' : 'bg-rose-50 text-rose-600'} px-3 py-1 rounded-lg">
+                                <i class="fa-solid ${item.type === 'attraction' ? 'fa-landmark' : 'fa-utensils'} mr-1"></i>${item.type === 'attraction' ? '景点' : '餐厅'}
                             </span>
                             <div class="flex items-center space-x-2">
                                 <span class="text-sm font-medium text-amber-500">${'⭐'.repeat(Number(item.rating))}</span>
                                 <button onclick="deleteAttractionItem(${item.id})" class="text-gray-300 hover:text-rose-500 text-base"><i class="fa-solid fa-trash-can"></i></button>
                             </div>
                         </div>
-                        <h4 class="font-semibold text-base text-apple-textPrimary">${item.name}</h4>
+                        <h4 class="font-semibold text-base">${item.name}</h4>
                         <div class="text-sm font-medium text-apple-blue">${item.price}</div>
                         <p class="text-sm text-apple-textSecondary bg-gray-50 p-2.5 rounded-xl">${item.notes}</p>
-                        ${item.image ? `<div class="mt-2"><img src="${item.image}" class="w-full h-36 object-cover rounded-xl" alt="照片"></div>` : ''}
-                    </div>
-                `;
+                    </div>`;
             });
         }
 
         function filterAttractions(type) {
             currentAttrFilter = type;
             ['all', 'attraction', 'dining'].forEach(t => {
-                const btn = document.getElementById(`filter-btn-${t}`);
-                if(t === type) {
-                    btn.className = "flex-1 py-2.5 text-sm font-medium rounded-xl bg-apple-blue text-white transition shadow-sm";
-                } else {
-                    btn.className = "flex-1 py-2.5 text-sm font-medium rounded-xl bg-white text-apple-textSecondary border border-apple-border transition";
-                }
+                document.getElementById(`filter-btn-${t}`).className = t === type ? "flex-1 py-2.5 text-sm font-medium rounded-xl bg-apple-blue text-white transition" : "flex-1 py-2.5 text-sm font-medium rounded-xl bg-white text-apple-textSecondary border border-apple-border transition";
             });
             renderAttractionsList();
         }
 
-        // Dual Mode Packing List Switcher & Render
         function switchPackingUser(userKey) {
             currentPackingUser = userKey;
             const btn1 = document.getElementById('btn-pack-user1');
@@ -1068,24 +933,14 @@
         function renderPackingList() {
             const container = document.getElementById('packing-container');
             container.innerHTML = '';
-            
             const activeList = currentPackingUser === 'user1' ? appData.packingListUser1 : appData.packingListUser2;
-
-            // Global stats across both users
-            let totalCount = 0;
-            let checkedCount = 0;
-            let activeUserChecked = 0;
-            let activeUserTotal = 0;
-
+            
+            let totalCount = 0, checkedCount = 0, activeUserChecked = 0, activeUserTotal = 0;
             const calcStats = (listObj, isActive) => {
                 for(let cat in listObj) {
                     listObj[cat].forEach(i => {
-                        totalCount++;
-                        if(i.checked) checkedCount++;
-                        if(isActive) {
-                            activeUserTotal++;
-                            if(i.checked) activeUserChecked++;
-                        }
+                        totalCount++; if(i.checked) checkedCount++;
+                        if(isActive) { activeUserTotal++; if(i.checked) activeUserChecked++; }
                     });
                 }
             };
@@ -1095,57 +950,44 @@
             document.getElementById('stat-packing').innerText = `${checkedCount} / ${totalCount}`;
             document.getElementById('packing-user-count').innerText = `${activeUserChecked}/${activeUserTotal} 已打勾`;
 
-            // Render active user categories
             for(let cat in activeList) {
                 const items = activeList[cat];
                 let catChecked = items.filter(i => i.checked).length;
-
                 let itemsHtml = '';
                 items.forEach(item => {
                     itemsHtml += `
                         <div class="flex items-start justify-between py-2.5 border-b border-gray-100 last:border-0">
                             <label class="flex items-start space-x-3 cursor-pointer select-none flex-1 pr-2">
-                                <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="togglePackingItem('${cat}', ${item.id})" class="mt-1 w-5 h-5 text-apple-blue rounded border-apple-border focus:ring-0">
+                                <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="togglePackingItem('${cat}', ${item.id})" class="mt-1 w-5 h-5 text-apple-blue rounded border-apple-border">
                                 <div>
                                     <span class="text-base ${item.checked ? 'line-through text-apple-textSecondary' : 'text-apple-textPrimary font-medium'}">${item.name}</span>
                                     ${item.note ? `<p class="text-xs text-apple-textSecondary mt-0.5">${item.note}</p>` : ''}
                                 </div>
                             </label>
                             <button onclick="deletePackingItem('${cat}', ${item.id})" class="text-gray-300 hover:text-rose-500 text-sm p-1"><i class="fa-solid fa-xmark"></i></button>
-                        </div>
-                    `;
+                        </div>`;
                 });
-
                 const isUser1 = currentPackingUser === 'user1';
-
                 container.innerHTML += `
                     <div class="glass-card rounded-2xl p-4 shadow-sm space-y-2 border-t-2 ${isUser1 ? 'border-t-apple-blue' : 'border-t-purple-500'}">
                         <div class="flex justify-between items-center pb-2 border-b border-gray-100">
                             <div class="flex items-center space-x-2">
-                                <h4 class="font-semibold text-base text-apple-textPrimary uppercase tracking-wider">${cat}</h4>
-                                <span class="text-xs ${isUser1 ? 'bg-blue-50 text-apple-blue' : 'bg-purple-50 text-purple-600'} px-2 py-0.5 rounded-md font-medium">
-                                    ${isUser1 ? '我的' : '同伴'}
-                                </span>
+                                <h4 class="font-semibold text-base uppercase tracking-wider">${cat}</h4>
+                                <span class="text-xs ${isUser1 ? 'bg-blue-50 text-apple-blue' : 'bg-purple-50 text-purple-600'} px-2 py-0.5 rounded-md font-medium">${isUser1 ? '我的' : '同伴'}</span>
                             </div>
                             <span class="text-xs text-apple-textSecondary font-medium">${catChecked}/${items.length} 准备就绪</span>
                         </div>
-                        <div class="space-y-1">
-                            ${itemsHtml || '<div class="text-xs text-apple-textSecondary py-2 text-center">点击右上角为这个分类添加物品</div>'}
-                        </div>
-                    </div>
-                `;
+                        <div class="space-y-1">${itemsHtml || '<div class="text-xs text-gray-400 py-2 text-center">暂无物品</div>'}</div>
+                    </div>`;
             }
         }
 
-        // Update Modal Target Style
         function updatePackingModalTargetStyle() {
             const radios = document.getElementsByName('pack-target-user');
             let selected = 'user1';
             for (let r of radios) { if (r.checked) selected = r.value; }
-
             const label1 = document.getElementById('label-pack-target-user1');
             const label2 = document.getElementById('label-pack-target-user2');
-
             if(selected === 'user1') {
                 label1.className = "flex items-center justify-center space-x-2 p-3 border rounded-xl cursor-pointer bg-blue-50 border-apple-blue text-apple-blue font-semibold";
                 label2.className = "flex items-center justify-center space-x-2 p-3 border rounded-xl cursor-pointer border-apple-border text-apple-textSecondary";
@@ -1155,7 +997,6 @@
             }
         }
 
-        // Modal Controls
         function openSettingsModal() {
             document.getElementById('set-title').value = appData.trip.title;
             document.getElementById('set-start-date').value = appData.trip.startDate;
@@ -1163,215 +1004,87 @@
             document.getElementById('set-budget').value = appData.trip.budget;
             document.getElementById('modal-settings').classList.remove('hidden');
         }
-
         function openScheduleModal() { document.getElementById('modal-schedule').classList.remove('hidden'); }
         function openBudgetModal() { document.getElementById('modal-budget').classList.remove('hidden'); }
         function openTransportModal() { document.getElementById('modal-transport').classList.remove('hidden'); }
         function openAttractionModal() { document.getElementById('modal-attraction').classList.remove('hidden'); }
         function openPackingModal() { 
-            // Sync radio to current packing user
             const radios = document.getElementsByName('pack-target-user');
-            for(let r of radios) {
-                if(r.value === currentPackingUser) r.checked = true;
-            }
+            for(let r of radios) if(r.value === currentPackingUser) r.checked = true;
             updatePackingModalTargetStyle();
             document.getElementById('modal-packing').classList.remove('hidden'); 
         }
+        function closeModal(modalId) { document.getElementById(modalId).classList.add('hidden'); }
 
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.add('hidden');
-        }
-
-        // Save Actions
         function saveSettings() {
             appData.trip.title = document.getElementById('set-title').value || "GoGoGo！周末出逃计划";
             appData.trip.startDate = document.getElementById('set-start-date').value;
             appData.trip.endDate = document.getElementById('set-end-date').value;
             appData.trip.budget = Number(document.getElementById('set-budget').value) || 0;
-            closeModal('modal-settings');
-            saveData();
-            showToast("基础设置已更新");
+            closeModal('modal-settings'); saveData(); showToast("基础设置已更新");
         }
 
         function saveSchedule() {
             const day = document.getElementById('sch-day').value;
-            const time = document.getElementById('sch-time').value;
-            const location = document.getElementById('sch-location').value;
             const title = document.getElementById('sch-title').value;
-            const notes = document.getElementById('sch-notes').value;
-            const imageInput = document.getElementById('sch-image');
-
-            if(!title) {
-                showToast("请输入行程标题");
-                return;
-            }
-
-            const processSave = (imgUrl = '') => {
-                if(!appData.schedule[day]) appData.schedule[day] = [];
-                appData.schedule[day].push({
-                    id: Date.now(),
-                    time, location, title, notes, image: imgUrl
-                });
-                closeModal('modal-schedule');
-                saveData();
-                showToast("行程添加成功");
-            };
-
-            if(imageInput.files && imageInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) { processSave(e.target.result); };
-                reader.readAsDataURL(imageInput.files[0]);
-            } else {
-                processSave();
-            }
+            if(!title) { showToast("请输入标题"); return; }
+            if(!appData.schedule[day]) appData.schedule[day] = [];
+            appData.schedule[day].push({ id: Date.now(), time: document.getElementById('sch-time').value, location: document.getElementById('sch-location').value, title, notes: document.getElementById('sch-notes').value, image: "" });
+            closeModal('modal-schedule'); saveData(); showToast("行程已添加");
         }
-
-        function deleteScheduleItem(day, id) {
-            appData.schedule[day] = appData.schedule[day].filter(i => i.id !== id);
-            saveData();
-            showToast("已删除行程");
-        }
+        function deleteScheduleItem(day, id) { appData.schedule[day] = appData.schedule[day].filter(i => i.id !== id); saveData(); showToast("已删除"); }
 
         function saveBudget() {
             const title = document.getElementById('bud-title').value;
-            const category = document.getElementById('bud-category').value;
             const amount = Number(document.getElementById('bud-amount').value);
-            const payer = document.getElementById('bud-payer').value.trim() || "通用";
-
-            if(!title || !amount) {
-                showToast("请完整填写账目金额和描述");
-                return;
-            }
-
-            appData.budgetList.push({ id: Date.now(), title, category, amount, payer });
-            closeModal('modal-budget');
-            saveData();
-            showToast("记账成功");
+            if(!title || !amount) { showToast("请填完整金额和描述"); return; }
+            appData.budgetList.push({ id: Date.now(), title, category: document.getElementById('bud-category').value, amount, payer: document.getElementById('bud-payer').value || "通用" });
+            closeModal('modal-budget'); saveData(); showToast("记账成功");
         }
-
-        function deleteBudgetItem(id) {
-            appData.budgetList = appData.budgetList.filter(i => i.id !== id);
-            saveData();
-            showToast("已删除账目");
-        }
+        function deleteBudgetItem(id) { appData.budgetList = appData.budgetList.filter(i => i.id !== id); saveData(); showToast("已删除"); }
 
         function saveTransport() {
-            const type = document.getElementById('ts-type').value;
             const title = document.getElementById('ts-title').value;
-            const time = document.getElementById('ts-time').value;
-            const code = document.getElementById('ts-code').value;
-            const desc = document.getElementById('ts-desc').value;
-            const imageInput = document.getElementById('ts-image');
-
-            if(!title) {
-                showToast("请填写名称");
-                return;
-            }
-
-            const processSave = (imgUrl = '') => {
-                appData.transportList.push({ id: Date.now(), type, title, time, code, desc, image: imgUrl });
-                closeModal('modal-transport');
-                saveData();
-                showToast("凭证添加成功");
-            };
-
-            if(imageInput.files && imageInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) { processSave(e.target.result); };
-                reader.readAsDataURL(imageInput.files[0]);
-            } else {
-                processSave();
-            }
+            if(!title) { showToast("请填名称"); return; }
+            appData.transportList.push({ id: Date.now(), type: document.getElementById('ts-type').value, title, time: document.getElementById('ts-time').value, code: document.getElementById('ts-code').value, desc: document.getElementById('ts-desc').value, image: "" });
+            closeModal('modal-transport'); saveData(); showToast("凭证已保存");
         }
-
-        function deleteTransportItem(id) {
-            appData.transportList = appData.transportList.filter(i => i.id !== id);
-            saveData();
-            showToast("已删除凭证");
-        }
+        function deleteTransportItem(id) { appData.transportList = appData.transportList.filter(i => i.id !== id); saveData(); showToast("已删除"); }
 
         function saveAttraction() {
-            const type = document.getElementById('att-type').value;
-            const rating = document.getElementById('att-rating').value;
             const name = document.getElementById('att-name').value;
-            const price = document.getElementById('att-price').value;
-            const notes = document.getElementById('att-notes').value;
-            const imageInput = document.getElementById('att-image');
-
-            if(!name) {
-                showToast("请输入名称");
-                return;
-            }
-
-            const processSave = (imgUrl = '') => {
-                appData.attractionsList.push({ id: Date.now(), type, rating, name, price, notes, image: imgUrl });
-                closeModal('modal-attraction');
-                saveData();
-                showToast("去处添加成功");
-            };
-
-            if(imageInput.files && imageInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) { processSave(e.target.result); };
-                reader.readAsDataURL(imageInput.files[0]);
-            } else {
-                processSave();
-            }
+            if(!name) { showToast("请输入名称"); return; }
+            appData.attractionsList.push({ id: Date.now(), type: document.getElementById('att-type').value, rating: document.getElementById('att-rating').value, name, price: document.getElementById('att-price').value, notes: document.getElementById('att-notes').value, image: "" });
+            closeModal('modal-attraction'); saveData(); showToast("去处已添加");
         }
-
-        function deleteAttractionItem(id) {
-            appData.attractionsList = appData.attractionsList.filter(i => i.id !== id);
-            saveData();
-            showToast("已删除去处");
-        }
+        function deleteAttractionItem(id) { appData.attractionsList = appData.attractionsList.filter(i => i.id !== id); saveData(); showToast("已删除"); }
 
         function savePacking() {
             const radios = document.getElementsByName('pack-target-user');
             let targetUser = 'user1';
             for(let r of radios) { if(r.checked) targetUser = r.value; }
-
             const cat = document.getElementById('pack-cat').value;
             const name = document.getElementById('pack-name').value.trim();
-            const note = document.getElementById('pack-note').value.trim();
-
-            if(!name) {
-                showToast("请输入物品名称");
-                return;
-            }
-
+            if(!name) { showToast("请输入物品名称"); return; }
             const targetList = targetUser === 'user1' ? appData.packingListUser1 : appData.packingListUser2;
             if(!targetList[cat]) targetList[cat] = [];
-            targetList[cat].push({ id: Date.now(), name, note, checked: false });
-
-            // Automatically switch view to the added user list
-            currentPackingUser = targetUser;
-            switchPackingUser(targetUser);
-
-            closeModal('modal-packing');
-            saveData();
-            showToast(`物品已加入${targetUser === 'user1' ? '【我的行李】' : '【同伴行李】'}`);
+            targetList[cat].push({ id: Date.now(), name, note: document.getElementById('pack-note').value.trim(), checked: false });
+            currentPackingUser = targetUser; switchPackingUser(targetUser);
+            closeModal('modal-packing'); saveData(); showToast("物品已添加");
         }
-
         function togglePackingItem(cat, id) {
             const activeList = currentPackingUser === 'user1' ? appData.packingListUser1 : appData.packingListUser2;
             const item = activeList[cat].find(i => i.id === id);
-            if(item) {
-                item.checked = !item.checked;
-                saveData();
-            }
+            if(item) { item.checked = !item.checked; saveData(); }
         }
-
         function deletePackingItem(cat, id) {
             const activeList = currentPackingUser === 'user1' ? appData.packingListUser1 : appData.packingListUser2;
-            activeList[cat] = activeList[cat].filter(i => i.id !== id);
-            saveData();
-            showToast("已删除物品");
+            activeList[cat] = activeList[cat].filter(i => i.id !== id); saveData(); showToast("已删除");
         }
 
-        // Initialize on Load
-        window.onload = function() {
-            renderAll();
-            fetchWeather();
+        // 启动
+        window.onload = async function () {
+            await initCloud();
         };
     </script>
 </body>
