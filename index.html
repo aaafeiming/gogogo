@@ -33,10 +33,6 @@
         }
     </script>
     <style>
-        /* Global size adjustment: enlarge text, icons, and controls by one step. */
-        html {
-            font-size: 110%;
-        }
         /* Custom Apple glassmorphism & scrolling */
         body {
             background-color: #F5F5F7;
@@ -70,6 +66,39 @@
             from { opacity: 0; transform: translateY(6px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* 微信移动端强化字号：比原版明显放大约两档 */
+        html {
+            font-size: 125% !important;
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+        body {
+            font-size: 1.125rem !important;
+        }
+        /* Tailwind 字号类显式增强，避免微信内置浏览器显示变化不明显 */
+        .text-xs { font-size: 0.875rem !important; }
+        .text-sm { font-size: 1rem !important; }
+        .text-base { font-size: 1.125rem !important; }
+        .text-lg { font-size: 1.375rem !important; }
+        .text-xl { font-size: 1.625rem !important; }
+        .text-2xl { font-size: 1.875rem !important; }
+        .text-3xl { font-size: 2.25rem !important; }
+        .text-4xl { font-size: 2.75rem !important; }
+        .text-5xl { font-size: 3.25rem !important; }
+        .text-6xl { font-size: 3.75rem !important; }
+        .text-7xl { font-size: 4.25rem !important; }
+        .text-8xl { font-size: 4.75rem !important; }
+        .text-9xl { font-size: 5.25rem !important; }
+        /* Font Awesome 图标同步放大，避免图标仍然偏小 */
+        i[class*="fa-"], svg {
+            font-size: 1.2em !important;
+        }
+        /* 小尺寸按钮也适当放大，方便手机触控 */
+        button, input, select, textarea {
+            font-size: 1.1em;
+        }
+
     </style>
 </head>
 <body class="h-full flex flex-col max-w-md mx-auto relative shadow-2xl overflow-hidden bg-apple-grayBg font-sans">
