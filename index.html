@@ -153,7 +153,7 @@
                         <i class="fa-solid fa-suitcase-rolling"></i>
                     </div>
                     <div>
-                        <div class="text-sm text-apple-textSecondary">行李清单 (双人)</div>
+                        <div class="text-sm text-apple-textSecondary">行李清单</div>
                         <div id="stat-packing" class="text-lg font-bold">0 / 0</div>
                     </div>
                 </div>
@@ -767,7 +767,7 @@
                 if(data && data.current_weather) {
                     const temp = data.current_weather.temperature;
                     const wind = data.current_weather.windspeed;
-                    currentTempEl.innerText = `实时温度 ${temp}°C | 风速 ${wind} km/h (中国-秦皇岛)`;
+                    currentTempEl.innerText = `实时温度 ${temp}°C丨风速 ${wind} km/h`;
                 }
                 if(data && data.daily) {
                     const dates = ["11.13", "11.14", "11.15"];
@@ -787,7 +787,7 @@
                     }
                 }
             } catch(e) {
-                currentTempEl.innerText = "晴 6°C ~ 14°C | 建议防风保暖";
+                currentTempEl.innerText = "晴 6°C ~ 14°C丨建议防风保暖";
             }
         }
 
