@@ -301,7 +301,7 @@
 
             <div class="flex justify-between items-center px-1">
                 <h3 id="packing-mode-title" class="text-base font-semibold">我的行李物品清单</h3>
-                <button onclick="openPackingModal()" class="text-sm text-apple-blue font-medium flex items-center space-x-1">
+                <button onclick="openPackingModal()" class="text-base text-apple-blue font-medium flex items-center space-x-1">
                     <i class="fa-solid fa-plus-circle"></i><span>添加物品</span>
                 </button>
             </div>
@@ -1071,11 +1071,11 @@
                             <label class="flex items-start space-x-3 cursor-pointer select-none flex-1 pr-2">
                                 <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="togglePackingItem('${cat}', ${item.id})" class="mt-0.5 w-5 h-5 text-apple-blue rounded border-apple-border focus:ring-0">
                                 <div>
-                                    <span class="text-sm ${item.checked ? 'line-through text-apple-textSecondary' : 'text-apple-textPrimary font-medium'}">${item.name}</span>
-                                    ${item.note ? `<p class="text-xs text-apple-textSecondary mt-1">${item.note}</p>` : ''}
+                                    <span class="text-base ${item.checked ? 'line-through text-apple-textSecondary' : 'text-apple-textPrimary font-medium'}">${item.name}</span>
+                                    ${item.note ? `<p class="text-sm text-apple-textSecondary mt-1">${item.note}</p>` : ''}
                                 </div>
                             </label>
-                            <button onclick="deletePackingItem('${cat}', ${item.id})" class="text-gray-300 hover:text-rose-500 text-sm"><i class="fa-solid fa-xmark"></i></button>
+                            <button onclick="deletePackingItem('${cat}', ${item.id})" class="text-gray-300 hover:text-rose-500 text-base"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                     `;
                 });
@@ -1083,11 +1083,11 @@
                 container.innerHTML += `
                     <div class="glass-card rounded-2xl p-4 shadow-sm space-y-2">
                         <div class="flex justify-between items-center pb-2 border-b border-gray-100">
-                            <h4 class="font-semibold text-sm text-apple-textPrimary uppercase tracking-wider">${cat}</h4>
-                            <span class="text-xs text-apple-textSecondary">${catChecked}/${items.length} 已备</span>
+                            <h4 class="font-semibold text-base text-apple-textPrimary uppercase tracking-wider">${cat}</h4>
+                            <span class="text-sm text-apple-textSecondary">${catChecked}/${items.length} 已备</span>
                         </div>
                         <div class="space-y-1">
-                            ${itemsHtml || '<div class="text-sm text-apple-textSecondary py-1">该分类下暂无物品</div>'}
+                            ${itemsHtml || '<div class="text-base text-apple-textSecondary py-1">该分类下暂无物品</div>'}
                         </div>
                     </div>
                 `;
