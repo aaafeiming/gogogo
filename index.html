@@ -372,17 +372,14 @@
     <!-- ================= JAVASCRIPT LOGIC ================= -->
     <script>
         // ================================================================
-        // ⚠️ 请在这里填入你的 CloudBase 配置信息 ⚠️
+        // ⚠️ 请在这里填入你的 JSONBin 配置信息 ⚠️
         // ================================================================
-        const TCB_ENV_ID = 'small-gazelle'; // 你的环境 ID
-        const TCB_PUBLISH_KEY = 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjFlNmM2ZWVkLWQyOWMtNDRjZC04YjBlLTUyMWIxYjE4N2FkMyJ9.eyJpc3MiOiJodHRwczovL3NtYWxsLWdhemVsbGUtZDRnMHM3MmsxNGVhYjJhMWEuYXAtc2hhbmdoYWkudGNiLWFwaS50ZW5jZW50Y2xvdWRhcGkuY29tIiwic3ViIjoiYW5vbiIsImF1ZCI6InNtYWxsLWdhemVsbGUtZDRnMHM3MmsxNGVhYjJhMWEiLCJleHAiOjQwOTczNTcwMTEsImlhdCI6MTc5MzY3MzgxMSwibm9uY2UiOiI0dHdRUjZHRVNuZWYzbFJlQ0xPN3pnIiwiYXRfaGFzaCI6IjR0d1FSNkdFU25lZjNsUmVDTE83emciLCJuYW1lIjoiQW5vbnltb3VzIiwic2NvcGUiOiJhbm9ueW1vdXMiLCJwcm9qZWN0X2lkIjoic21hbGwtZ2F6ZWxsZS1kNGcwczcyazE0ZWFiMmExYSIsIm1ldGEiOnsicGxhdGZvcm0iOiJQdWJsaXNoYWJsZUtleSJ9LCJyb2xlIjoiYW5vbiIsImlzX2Fub255bW91cyI6dHJ1ZSwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiYW5vbnltb3VzIiwicHJvdmlkZXJzIjpbImFub255bW91cyJdfSwidXNlcl9tZXRhZGF0YSI6eyJuYW1lIjoiQW5vbnltb3VzIn0sInVzZXJfdHlwZSI6IiIsImNsaWVudF90eXBlIjoiY2xpZW50X3VzZXIiLCJpc19zeXN0ZW1fYWRtaW4iOmZhbHNlfQ.MTZr6qdB2VOIkxqmxTB6nB8GVnz5mOpsHKVjXn6fAolEoFqmCYs5QqP8Bk8Sd-nW75RBy862g-e-qtNr5O6D2lkLPHaY3HLd3LdvSIoWpejRs-jb4WEA4OgXmKcEQlmMYJ4KxQgYEa_f-z6CZzm0UKwd0wnPPPDZWgc5LVa4g-snoexEKLB31hVBet4dKRd3Mm2To23Fj7ki5VTmzZLhZtaopWRFdzw64Swbjv5jRH1aJ9f4XPuTAMgGwl1EfGzV-Skcapc1DFiMqTYm6qLD1qPmTjhzEEbrRuAmV5nSefwiqrvru67UIiLlV3RfEf41arLAipehj3W3AWEJq-1uqw'; // 👈 将这里的 YOUR_PUBLISH_KEY 替换为你真实的 publish_key
+        const JSONBIN_ID = '6ae951baac6210605a67784b';       // 👈 替换为你刚才创建的 Bin ID
+        const JSONBIN_KEY = '$2a$10$UY7Cn4F7S/BOGPCx9VO.buJjPtQvS.1FnxgJtPialmOh7JyUzrBba';  // 👈 替换为你 API KEYS 里的 Master Key
         // ================================================================
 
-        const TCB_BASE_URL = `https://${TCB_ENV_ID}.api.tcloudbasegateway.com`;
-        const TCB_TABLE = 'trip_rooms';
+        const JSONBIN_BASE = 'https://api.jsonbin.io/v3/b';
 
-        let accessToken = null;
-        let recordId = null;
         let roomID = null;
         let appData = {
             trip: { title: "GoGoGo！周末出逃计划", startDate: "2026.11.13", endDate: "2026.11.15", budget: 3000 },
@@ -402,6 +399,7 @@
         let currentPackingUser = "user1";
         let isSyncing = false;
         let pollTimer = null;
+        let remoteAllData = {}; // 存储云端所有房间的数据
 
         function getQueryParam(name) { return new URLSearchParams(window.location.search).get(name); }
         function setQueryParam(name, value) {
@@ -423,64 +421,25 @@
         }
 
         // ================================================================
-        // CloudBase 云端同步逻辑
+        // JSONBin 云端同步逻辑
         // ================================================================
-        async function tcbSignIn() {
-            const res = await fetch(`${TCB_BASE_URL}/auth/v1/signin/anonymously`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-TCB-API-KEY': TCB_PUBLISH_KEY, 'X-TCB-Publishable-Key': TCB_PUBLISH_KEY },
-                body: JSON.stringify({})
+        async function jsonbinFetch() {
+            const res = await fetch(`${JSONBIN_BASE}/${JSONBIN_ID}/latest`, {
+                headers: { 'X-Master-Key': JSONBIN_KEY }
             });
+            if (!res.ok) throw new Error('Fetch failed');
             const json = await res.json();
-            if (json.access_token) {
-                accessToken = json.access_token;
-            } else {
-                throw new Error('匿名登录失败: ' + JSON.stringify(json));
-            }
+            return json.record || {};
         }
 
-        async function tcbFindRoom(roomId) {
-            const url = `${TCB_BASE_URL}/v1/rdb/rest/${TCB_TABLE}?room_id=eq.${encodeURIComponent(roomId)}`;
-            const res = await fetch(url, {
-                headers: { 'Authorization': `Bearer ${accessToken}` }
-            });
-            const json = await res.json();
-            if (Array.isArray(json) && json.length > 0) {
-                return { id: json[0].id, data: JSON.parse(json[0].trip_data) };
-            }
-            return null;
-        }
-
-        async function tcbCreateRoom(roomId, data) {
-            const url = `${TCB_BASE_URL}/v1/rdb/rest/${TCB_TABLE}`;
-            const res = await fetch(url, {
-                method: 'POST',
+        async function jsonbinSave(allData) {
+            const res = await fetch(`${JSONBIN_BASE}/${JSONBIN_ID}`, {
+                method: 'PUT',
                 headers: {
-                    'Authorization': `Bearer ${accessToken}`,
                     'Content-Type': 'application/json',
-                    'Prefer': 'return=representation'
+                    'X-Master-Key': JSONBIN_KEY
                 },
-                body: JSON.stringify({
-                    room_id: roomId,
-                    trip_data: JSON.stringify(data)
-                })
-            });
-            const json = await res.json();
-            if (Array.isArray(json) && json.length > 0) {
-                return json[0].id;
-            }
-            throw new Error('创建失败: ' + JSON.stringify(json));
-        }
-
-        async function tcbUpdateRoom(recordId, data) {
-            const url = `${TCB_BASE_URL}/v1/rdb/rest/${TCB_TABLE}?id=eq.${recordId}`;
-            const res = await fetch(url, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ trip_data: JSON.stringify(data) })
+                body: JSON.stringify(allData)
             });
             return res.ok;
         }
@@ -496,18 +455,17 @@
             if (localCache) appData = JSON.parse(localCache);
 
             try {
-                await tcbSignIn();
-                const remote = await tcbFindRoom(roomID);
-                if (remote) {
-                    appData = remote.data;
-                    recordId = remote.id;
+                remoteAllData = await jsonbinFetch();
+                if (remoteAllData[roomID]) {
+                    appData = remoteAllData[roomID];
                 } else {
-                    recordId = await tcbCreateRoom(roomID, appData);
+                    remoteAllData[roomID] = appData;
+                    await jsonbinSave(remoteAllData);
                 }
                 showToast('云端连接成功');
             } catch (e) {
                 console.error(e);
-                showToast('云端连接失败，请检查 Publish Key 或 RLS 权限');
+                showToast('云端连接失败，请检查配置');
             }
 
             document.getElementById('loading-mask').style.opacity = '0';
@@ -516,30 +474,40 @@
             fetchWeather();
 
             if (pollTimer) clearInterval(pollTimer);
-            pollTimer = setInterval(pullFromCloud, 5000);
+            // 改为 60 秒轮询一次，避免免费额度耗尽
+            pollTimer = setInterval(pullFromCloud, 60000);
+
+            // 切回页面时立即拉取
+            window.addEventListener('focus', pullFromCloud);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) pullFromCloud();
+            });
         }
 
         async function pullFromCloud() {
-            if (!recordId || isSyncing) return;
+            if (!roomID || isSyncing) return;
             try {
-                const remote = await tcbFindRoom(roomID);
-                if (remote && JSON.stringify(remote.data) !== JSON.stringify(appData)) {
-                    appData = remote.data;
+                const latestData = await jsonbinFetch();
+                if (latestData[roomID] && JSON.stringify(latestData[roomID]) !== JSON.stringify(appData)) {
+                    appData = latestData[roomID];
                     localStorage.setItem(`gogogo_data_${roomID}`, JSON.stringify(appData));
                     renderAll();
                     showToast('已同步同伴的修改');
                 }
+                remoteAllData = latestData;
             } catch (e) { }
         }
 
         async function saveData() {
             localStorage.setItem(`gogogo_data_${roomID}`, JSON.stringify(appData));
             renderAll();
-            if (!recordId || isSyncing) return;
+            if (!roomID || isSyncing) return;
             
             isSyncing = true;
             try {
-                await tcbUpdateRoom(recordId, appData);
+                remoteAllData[roomID] = appData;
+                const ok = await jsonbinSave(remoteAllData);
+                if (!ok) throw new Error('Save failed');
             } catch (e) {
                 showToast('网络不佳，数据已暂存在本地');
             } finally {
