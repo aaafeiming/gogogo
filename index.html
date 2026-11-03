@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>GoGoGo！周末出逃计划</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tailwind Config for Apple Colors & SF Pro Fonts -->
     <script>
         tailwind.config = {
             darkMode: 'media',
@@ -37,7 +40,7 @@
 
     <div id="loading-mask">
         <i class="fa-solid fa-plane-departure text-4xl text-apple-blue animate-bounce mb-4"></i>
-        <div class="text-apple-textSecondary text-sm">正在连接云朵房间...</div>
+        <div class="text-apple-textSecondary text-sm">正在连接云端房间...</div>
     </div>
 
     <!-- Top Header Bar -->
@@ -368,9 +371,20 @@
 
     <!-- ================= JAVASCRIPT LOGIC ================= -->
     <script>
-        const SYNC_BASE = 'https://jsonblob.com/api/jsonBlob';
+        // ================================================================
+        // ⚠️ 请在这里填入你的 CloudBase 配置信息 ⚠️
+        // ================================================================
+        const TCB_ENV_ID = 'small-gazelle'; // 你的环境 ID
+        const TCB_PUBLISH_KEY = 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjFlNmM2ZWVkLWQyOWMtNDRjZC04YjBlLTUyMWIxYjE4N2FkMyJ9.eyJpc3MiOiJodHRwczovL3NtYWxsLWdhemVsbGUtZDRnMHM3MmsxNGVhYjJhMWEuYXAtc2hhbmdoYWkudGNiLWFwaS50ZW5jZW50Y2xvdWRhcGkuY29tIiwic3ViIjoiYW5vbiIsImF1ZCI6InNtYWxsLWdhemVsbGUtZDRnMHM3MmsxNGVhYjJhMWEiLCJleHAiOjQwOTczNTcwMTEsImlhdCI6MTc5MzY3MzgxMSwibm9uY2UiOiI0dHdRUjZHRVNuZWYzbFJlQ0xPN3pnIiwiYXRfaGFzaCI6IjR0d1FSNkdFU25lZjNsUmVDTE83emciLCJuYW1lIjoiQW5vbnltb3VzIiwic2NvcGUiOiJhbm9ueW1vdXMiLCJwcm9qZWN0X2lkIjoic21hbGwtZ2F6ZWxsZS1kNGcwczcyazE0ZWFiMmExYSIsIm1ldGEiOnsicGxhdGZvcm0iOiJQdWJsaXNoYWJsZUtleSJ9LCJyb2xlIjoiYW5vbiIsImlzX2Fub255bW91cyI6dHJ1ZSwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiYW5vbnltb3VzIiwicHJvdmlkZXJzIjpbImFub255bW91cyJdfSwidXNlcl9tZXRhZGF0YSI6eyJuYW1lIjoiQW5vbnltb3VzIn0sInVzZXJfdHlwZSI6IiIsImNsaWVudF90eXBlIjoiY2xpZW50X3VzZXIiLCJpc19zeXN0ZW1fYWRtaW4iOmZhbHNlfQ.MTZr6qdB2VOIkxqmxTB6nB8GVnz5mOpsHKVjXn6fAolEoFqmCYs5QqP8Bk8Sd-nW75RBy862g-e-qtNr5O6D2lkLPHaY3HLd3LdvSIoWpejRs-jb4WEA4OgXmKcEQlmMYJ4KxQgYEa_f-z6CZzm0UKwd0wnPPPDZWgc5LVa4g-snoexEKLB31hVBet4dKRd3Mm2To23Fj7ki5VTmzZLhZtaopWRFdzw64Swbjv5jRH1aJ9f4XPuTAMgGwl1EfGzV-Skcapc1DFiMqTYm6qLD1qPmTjhzEEbrRuAmV5nSefwiqrvru67UIiLlV3RfEf41arLAipehj3W3AWEJq-1uqw'; // 👈 将这里的 YOUR_PUBLISH_KEY 替换为你真实的 publish_key
+        // ================================================================
 
-        const defaultData = {
+        const TCB_BASE_URL = `https://${TCB_ENV_ID}.api.tcloudbasegateway.com`;
+        const TCB_TABLE = 'trip_rooms';
+
+        let accessToken = null;
+        let recordId = null;
+        let roomID = null;
+        let appData = {
             trip: { title: "GoGoGo！周末出逃计划", startDate: "2026.11.13", endDate: "2026.11.15", budget: 3000 },
             schedule: {
                 "Day 1": [{ id: 1, time: "10:00", location: "秦皇岛站", title: "抵达秦皇岛并入住海边酒店", notes: "放置行李，整理衣物。", image: "" }],
@@ -383,9 +397,6 @@
             packingListUser1: { "证件与票据": [{ id: 1, name: "身份证", checked: true, note: "随身携带" }] },
             packingListUser2: { "洗护日常": [{ id: 5, name: "洗漱包", checked: false, note: "" }] }
         };
-
-        let roomID = null;
-        let appData = JSON.parse(JSON.stringify(defaultData));
         let currentActiveDay = "Day 1";
         let currentAttrFilter = "all";
         let currentPackingUser = "user1";
@@ -412,133 +423,132 @@
         }
 
         // ================================================================
-        // jsonblob 云端同步逻辑
+        // CloudBase 云端同步逻辑
         // ================================================================
-        
-        // 带超时机制的 fetch
-        async function fetchWithTimeout(resource, options = {}) {
-            const { timeout = 5000 } = options;
-            const controller = new AbortController();
-            const id = setTimeout(() => controller.abort(), timeout);
-            try {
-                const response = await fetch(resource, { ...options, signal: controller.signal });
-                clearTimeout(id);
-                return response;
-            } catch (error) {
-                clearTimeout(id);
-                throw error;
+        async function tcbSignIn() {
+            const res = await fetch(`${TCB_BASE_URL}/auth/v1/signin/anonymously`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-TCB-Publishable-Key': TCB_PUBLISH_KEY },
+                body: JSON.stringify({})
+            });
+            const json = await res.json();
+            if (json.access_token) {
+                accessToken = json.access_token;
+            } else {
+                throw new Error('匿名登录失败: ' + JSON.stringify(json));
             }
+        }
+
+        async function tcbFindRoom(roomId) {
+            const url = `${TCB_BASE_URL}/v1/rdb/rest/${TCB_TABLE}?room_id=eq.${encodeURIComponent(roomId)}`;
+            const res = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            });
+            const json = await res.json();
+            if (Array.isArray(json) && json.length > 0) {
+                return { id: json[0].id, data: JSON.parse(json[0].trip_data) };
+            }
+            return null;
+        }
+
+        async function tcbCreateRoom(roomId, data) {
+            const url = `${TCB_BASE_URL}/v1/rdb/rest/${TCB_TABLE}`;
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify({
+                    room_id: roomId,
+                    trip_data: JSON.stringify(data)
+                })
+            });
+            const json = await res.json();
+            if (Array.isArray(json) && json.length > 0) {
+                return json[0].id;
+            }
+            throw new Error('创建失败: ' + JSON.stringify(json));
+        }
+
+        async function tcbUpdateRoom(recordId, data) {
+            const url = `${TCB_BASE_URL}/v1/rdb/rest/${TCB_TABLE}?id=eq.${recordId}`;
+            const res = await fetch(url, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ trip_data: JSON.stringify(data) })
+            });
+            return res.ok;
         }
 
         async function initCloud() {
             let urlRoom = getQueryParam('room');
-            
-            if (urlRoom) {
-                roomID = urlRoom;
-                const localCache = localStorage.getItem(`gogogo_data_${roomID}`);
-                if (localCache) appData = JSON.parse(localCache);
-                
-                document.getElementById('loading-mask').style.opacity = '0';
-                setTimeout(() => document.getElementById('loading-mask').style.display = 'none', 300);
-                renderAll();
-                fetchWeather();
+            if (!urlRoom) {
+                urlRoom = 'room_' + Math.random().toString(36).slice(2, 8);
+                setQueryParam('room', urlRoom);
+            }
+            roomID = urlRoom;
+            const localCache = localStorage.getItem(`gogogo_data_${roomID}`);
+            if (localCache) appData = JSON.parse(localCache);
 
-                try {
-                    const res = await fetchWithTimeout(`${SYNC_BASE}/${roomID}`, { timeout: 4000 });
-                    if (res.ok) {
-                        const remote = await res.json();
-                        if (remote && remote.trip) {
-                            appData = remote;
-                            localStorage.setItem(`gogogo_data_${roomID}`, JSON.stringify(appData));
-                            renderAll();
-                        }
-                    }
-                } catch (e) {
-                    console.warn('获取云端数据超时，使用本地缓存', e);
-                    showToast('网络较慢，已使用本地数据，正在后台重连...');
+            try {
+                await tcbSignIn();
+                const remote = await tcbFindRoom(roomID);
+                if (remote) {
+                    appData = remote.data;
+                    recordId = remote.id;
+                } else {
+                    recordId = await tcbCreateRoom(roomID, appData);
                 }
-            } else {
-                // 新建房间
-                appData = JSON.parse(JSON.stringify(defaultData));
-                document.getElementById('loading-mask').style.opacity = '0';
-                setTimeout(() => document.getElementById('loading-mask').style.display = 'none', 300);
-                renderAll();
-                fetchWeather();
-
-                try {
-                    const res = await fetchWithTimeout(SYNC_BASE, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                        body: JSON.stringify(appData),
-                        timeout: 5000
-                    });
-                    if (res.ok) {
-                        const loc = res.headers.get('Location');
-                        if (loc) {
-                            roomID = loc.split('/').pop();
-                            setQueryParam('room', roomID);
-                            localStorage.setItem(`gogogo_data_${roomID}`, JSON.stringify(appData));
-                        }
-                    }
-                } catch (e) {
-                    // 极端情况下未拿到云端 ID，生成一个本地 ID 兜底
-                    roomID = 'local_' + Math.random().toString(36).slice(2, 10);
-                    setQueryParam('room', roomID);
-                    showToast('云端创建超时，已切换至本地模式');
-                }
+                showToast('云端连接成功');
+            } catch (e) {
+                console.error(e);
+                showToast('云端连接失败，请检查 Publish Key 或 RLS 权限');
             }
 
-            if (roomID) {
-                if (pollTimer) clearInterval(pollTimer);
-                pollTimer = setInterval(pullFromCloud, 5000);
-            }
+            document.getElementById('loading-mask').style.opacity = '0';
+            setTimeout(() => document.getElementById('loading-mask').style.display = 'none', 300);
+            renderAll();
+            fetchWeather();
+
+            if (pollTimer) clearInterval(pollTimer);
+            pollTimer = setInterval(pullFromCloud, 5000);
         }
 
         async function pullFromCloud() {
-            if (!roomID || isSyncing || roomID.startsWith('local_')) return;
+            if (!recordId || isSyncing) return;
             try {
-                const res = await fetchWithTimeout(`${SYNC_BASE}/${roomID}`, { timeout: 4000 });
-                if (res.ok) {
-                    const remote = await res.json();
-                    if (remote && remote.trip && JSON.stringify(remote) !== JSON.stringify(appData)) {
-                        appData = remote;
-                        localStorage.setItem(`gogogo_data_${roomID}`, JSON.stringify(appData));
-                        renderAll();
-                    }
+                const remote = await tcbFindRoom(roomID);
+                if (remote && JSON.stringify(remote.data) !== JSON.stringify(appData)) {
+                    appData = remote.data;
+                    localStorage.setItem(`gogogo_data_${roomID}`, JSON.stringify(appData));
+                    renderAll();
+                    showToast('已同步同伴的修改');
                 }
-            } catch (e) {
-                // 轮询超时忽略，不打扰用户
-            }
+            } catch (e) { }
         }
 
         async function saveData() {
             localStorage.setItem(`gogogo_data_${roomID}`, JSON.stringify(appData));
             renderAll();
-
-            if (!roomID || roomID.startsWith('local_')) {
-                showToast('本地保存成功（未连接云端）');
-                return;
-            }
-
+            if (!recordId || isSyncing) return;
+            
             isSyncing = true;
             try {
-                const res = await fetchWithTimeout(`${SYNC_BASE}/${roomID}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify(appData),
-                    timeout: 5000
-                });
-                if (!res.ok) throw new Error('Sync failed');
+                await tcbUpdateRoom(recordId, appData);
             } catch (e) {
-                console.warn('云端保存失败，已存至本地', e);
-                showToast('网络不佳，数据已暂存在本地，稍后自动重试');
+                showToast('网络不佳，数据已暂存在本地');
             } finally {
                 isSyncing = false;
             }
         }
 
         // ================================================================
-        // UI 逻辑
+        // UI 逻辑（保持不变）
         // ================================================================
         function switchTab(tabId) {
             const tabs = ['overview', 'schedule', 'budget', 'transport', 'attractions', 'packing'];
@@ -606,10 +616,7 @@
         }
 
         function copyShareLink() {
-            if (!roomID || roomID.startsWith('local_')) {
-                showToast("当前为本地模式，无法生成共享链接");
-                return;
-            }
+            if (!roomID) return;
             const shareUrl = window.location.origin + window.location.pathname + '?room=' + encodeURIComponent(roomID);
             navigator.clipboard.writeText(shareUrl).then(() => {
                 showToast("共享链接已复制！同伴打开即可实时协作。");
