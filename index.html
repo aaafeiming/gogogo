@@ -428,7 +428,7 @@
         async function tcbSignIn() {
             const res = await fetch(`${TCB_BASE_URL}/auth/v1/signin/anonymously`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-TCB-Publishable-Key': TCB_PUBLISH_KEY },
+                headers: { 'Content-Type': 'application/json', 'X-TCB-API-KEY': TCB_PUBLISH_KEY, 'X-TCB-Publishable-Key': TCB_PUBLISH_KEY },
                 body: JSON.stringify({})
             });
             const json = await res.json();
